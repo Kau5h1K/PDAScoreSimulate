@@ -63,12 +63,14 @@ def run_score_experiment(seed, num_simulations, num_records, address_auto, addre
 # Sidebar inputs
 with st.sidebar:
     st.subheader("Change Configuration")
-    seed = st.number_input("Input the pseudo-random seed to reproduce the results", value=1, step=1, format="%d")
+    st.divider()
+    seed = st.number_input("Input the pseudo-random seed to reproduce the results:", value=1, step=1, format="%d")
+    st.divider()
     num_simulations = st.slider("Select number of simulations: ", value=1000, min_value=1, max_value=10000, step=1)
 
 random_integers = generate_sorted_random_integers()
 
-st.title(":100: PDA Score Simulator")
+st.title(":100: PDA Score Impact Assessment")
 st.write("Utility tool to assess the impact of score changes when performing anomalous data cleanup in ElevanceHealth's Provider Directory data (SPS).")
 
 st.divider()
@@ -97,6 +99,7 @@ st.caption(f"Market Selected: {market_selected}")
 st.caption(f"ProviderFinder Extract Timestamp: {filtered_df['TIMESTAMP'].iloc[0]}")
 
 with st.sidebar:
+    st.divider()
     st.caption(f"Last Refresh Timestamp: {timestamp}")
 
 tab1, tab2 = st.tabs(["Score Prediction", "Manual Filter Impact"])
@@ -124,10 +127,17 @@ with tab1:
     result_df.columns = ['Statistic', 'Volume']
 
     st.subheader("Data Quality Recommendations Breakdown:")
-    st.info("Edit the values to tune the predictions")
+
+    with st.expander("See more details"):
+        st.write('''
+            The chart above shows some numbers I picked for you.
+            I rolled actual dice for these, so they're *guaranteed* to
+            be random.
+        ''')
 
     edited_df = st.data_editor(result_df, key='reco', hide_index=True)
     st.session_state['reco_bd'] = result_df
+    st.info("Edit the above values and click Apply to tune the predictions ")
         
     if st.button('Apply Changes'):
         st.divider()
@@ -167,3 +177,25 @@ with tab1:
             st.dataframe(df_formatted, hide_index=True)
             st.warning('Tune the above attribute-wise scores to sync with Elixir-P UI for more accurate predictions')
             st.toast('Process Finished! Please review the results.')
+
+with tab2:
+    st.info("Default granularity is unique **NPI-Address** combinations")
+    on = st.toggle("Turn ON to change the granularity to RLTD_PADRS_KEY")
+
+    if on:
+        pass
+
+    filename_pattern_2 = re.compile(r"ELIXIR_adhoc_PDAFilterImpactSummary_(\d{8}).csv")
+    files_2 = os.listdir(folder_path)
+
+    for file in files_2:
+        match = filename_pattern_2.match(file)
+        if match:
+            timestamp_2 = match.group(1)
+            break
+    else:
+        st.error("No matching file found.")
+        st.stop()
+
+    master_df_2 = pd.read_csv(f"./data/ELIXIR_adhoc_PDAFilterImpactSummary_{timestamp_2}.csv")[['MARKET', 'TIMESTAMP', 'RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN']].drop_duplicates()
+    master_df_2
