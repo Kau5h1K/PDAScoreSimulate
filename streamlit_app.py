@@ -202,7 +202,7 @@ with tab1:
         st.subheader("🧮 Estimated Demographic Scores After Cleanup:")
         st.text("")
         st.write("**Original Demographic Scores:**")
-        bar = st.progress(random_integers[0])
+        bar = st.progress(random_integers[0], text="Reconstructing original demographic scores. Please wait.")
         time.sleep(1)
 
         original_df = st.session_state['reco_bd']
@@ -217,62 +217,63 @@ with tab1:
         specialty_manual = float(original_df.loc[original_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
         specialty_good = float(original_df.loc[original_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
 
-        bar.progress(random_integers[1])
+        bar.progress(random_integers[1], text="Reconstructing original demographic scores. Please wait.")
         time.sleep(1)
 
         average_scores_df = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
         st.session_state['average_scores_df'] = average_scores_df
 
-        bar.progress(random_integers[2])
+        bar.progress(random_integers[2], text="Reconstructing original demographic scores. Please wait.")
         time.sleep(1)
 
         if 'average_scores_df' in st.session_state:
             data = st.session_state['average_scores_df'].round(1).to_dict(orient='records')
-            bar.progress(random_integers[3])
+            bar.progress(random_integers[3], text="Reconstructing original demographic scores. Please wait.")
             time.sleep(1)
             bar.progress(100)
+            bar.empty()
             df_formatted = st.session_state['average_scores_df'].map(format_floats)
             df_original_result = df_formatted
             col1, col2, col3 = st.columns([1, 5, 1])
             with col2:
                 st.dataframe(df_formatted, hide_index=True)
         
+        st.divider()
         st.write("**Demographic Scores After Updates:**")
 
-        bar = st.progress(random_integers[0])
-        time.sleep(1)
-        st.session_state['reco_bd'] = edited_df
-
-        edited_df = st.session_state['reco_bd']
-        num_records = int(edited_df.loc[edited_df['Statistic'] == 'Number of Records', 'Volume'].values[0])
-        address_auto = float(edited_df.loc[edited_df['Statistic'] == 'Address - Auto Update (Final Suggestion)', 'Volume'].values[0])
-        address_manual = float(edited_df.loc[edited_df['Statistic'] == 'Address - Manual Review (Final Suggestion)', 'Volume'].values[0])
-        address_good = float(edited_df.loc[edited_df['Statistic'] == 'Address - Good (Final Suggestion)', 'Volume'].values[0])
-        phone_auto = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Auto Update (Final Suggestion)', 'Volume'].values[0])
-        phone_manual = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Manual Review (Final Suggestion)', 'Volume'].values[0])
-        phone_good = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Good (Final Suggestion)', 'Volume'].values[0])
-        specialty_auto = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Auto Update', 'Volume'].values[0])
-        specialty_manual = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
-        specialty_good = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
-
-        bar.progress(random_integers[1])
-        time.sleep(1)
-
-        average_scores_df = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
-        st.session_state['average_scores_df'] = average_scores_df
-
-        bar.progress(random_integers[2])
-        time.sleep(1)
-
-        if 'average_scores_df' in st.session_state:
-            data = st.session_state['average_scores_df'].round(1).to_dict(orient='records')
-            bar.progress(random_integers[3])
+        with st.status("Computing Scores After Data Cleanup...", expanded=True) as status:
+            st.write("Searching for data...")
+            time.sleep(2)
+            st.write("Reading the data...")
             time.sleep(1)
-            bar.progress(100)
-            df_formatted = st.session_state['average_scores_df'].map(format_floats)
-            col1, col2, col3 = st.columns([1, 5, 1])
-            with col2:
-                st.dataframe(df_formatted, hide_index=True)
+
+            st.session_state['reco_bd'] = edited_df
+            edited_df = st.session_state['reco_bd']
+            num_records = int(edited_df.loc[edited_df['Statistic'] == 'Number of Records', 'Volume'].values[0])
+            address_auto = float(edited_df.loc[edited_df['Statistic'] == 'Address - Auto Update (Final Suggestion)', 'Volume'].values[0])
+            address_manual = float(edited_df.loc[edited_df['Statistic'] == 'Address - Manual Review (Final Suggestion)', 'Volume'].values[0])
+            address_good = float(edited_df.loc[edited_df['Statistic'] == 'Address - Good (Final Suggestion)', 'Volume'].values[0])
+            phone_auto = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Auto Update (Final Suggestion)', 'Volume'].values[0])
+            phone_manual = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Manual Review (Final Suggestion)', 'Volume'].values[0])
+            phone_good = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Good (Final Suggestion)', 'Volume'].values[0])
+            specialty_auto = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Auto Update', 'Volume'].values[0])
+            specialty_manual = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
+            specialty_good = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
+
+            st.write(f"Running {num_simulations} simulations...")
+            time.sleep(1)
+            average_scores_df = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
+            st.session_state['average_scores_df'] = average_scores_df
+            st.write(f"Estimating the scores...")
+            time.sleep(1)
+
+            if 'average_scores_df' in st.session_state:
+                data = st.session_state['average_scores_df'].round(1).to_dict(orient='records')
+                df_formatted = st.session_state['average_scores_df'].map(format_floats)
+
+            status.update(
+                label="Process complete!", state="complete", expanded=False
+            )
         
         a1, a2 = float(df_original_result['Address Score'].iloc[0]), float(df_formatted['Address Score'].iloc[0])
         p1, p2 = float(df_original_result['Phone Score'].iloc[0]), float(df_formatted['Phone Score'].iloc[0])
@@ -284,9 +285,33 @@ with tab1:
         if (absolute_difference > margin_error):
             variance_flag = 1
 
+        st.text("")
         messages = []
-        st.write("---")
-        st.write(f"**Results Summary**:")
+        a_delta = round(a2 - a1, 1)
+        p_delta = round(p2 - p1, 1)
+        s_delta = round(s2 - s1, 1)
+        d_delta = round(d2 - d1, 1)
+
+        col1, col2, col3, col4 = st.columns(4)
+        if (a_delta == 0):
+            col1.metric("Address Score", a2, a_delta, delta_color="off")
+        else:
+            col1.metric("Address Score", a2, a_delta)
+        
+        if (p_delta == 0):
+            col2.metric("Phone Score", p2, p_delta, delta_color="off")
+        else:
+            col2.metric("Phone Score", p2, p_delta)
+
+        if (s_delta == 0):
+            col3.metric("Specialty Score", s2, s_delta, delta_color="off")
+        else:
+            col3.metric("Specialty Score", s2, s_delta)
+
+        if (d_delta == 0):
+            col4.metric("Overall Demographic Score", d2, d_delta, delta_color="off")
+        else:
+            col4.metric("Overall Demographic Score", d2, d_delta)
 
         if a2 - a1 < 0:
             messages.append(f"- Address Score **decreased by {a1 - a2:.1f}**")
@@ -319,10 +344,12 @@ with tab1:
 
         final_message = "\n".join(messages)
 
-        if (improvement_flag == 1):
-            st.error(final_message)
-        else:
-            st.success(final_message)
+        st.text("")
+        with st.expander(":mag: Understanding the Results", expanded = True):
+            if (improvement_flag == 1):
+                st.error(final_message)
+            else:
+                st.success(final_message)
 
         if (variance_flag == 1):
             with st.expander('⚠️ WARNING'):
@@ -337,7 +364,7 @@ with tab1:
 
 
 with tab2:
-    st.info("Default granularity is unique **NPI-Address** combinations")
+    st.info("The counts represent unique **NPI-Address** entries")
     on = st.toggle("Turn ON to change the granularity to RLTD_PADRS_KEY")
 
     if on:
