@@ -121,7 +121,7 @@ with st.sidebar:
 
 master_df = pd.read_csv(f"./data/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
 
-tab1, tab2 = st.tabs([":star: Score Prediction", "📉 Manual Filter Impact"])
+tab1, tab2, tab3 = st.tabs([":star: Score Prediction", "📉 Manual Filter Impact", "🌐 Directory 360°"])
 
 with tab1:
     st.write("> This section helps users estimate the Provider Directory Accuracy (PDA) scores following targeted cleanup efforts.")
@@ -589,11 +589,12 @@ with tab2:
 
         df_manfil = pd.DataFrame(data)
 
-
-
         df_manfil.style.set_properties(**{'text-align': 'center'}).set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}])
         st.markdown('<style>.col_heading{text-align: center;}</style>', unsafe_allow_html=True)
         df_manfil.columns = ['<div class="col_heading">'+col+'</div>' for col in df_manfil.columns] 
         st.write(df_manfil.to_html(escape=False, index=False), unsafe_allow_html=True)
 
-
+with tab3:
+    st.write("> This section offers visualizations on the overall health of the provider directory.")
+    st.text("")
+    st.error("🚧 This page is currently under construction. Please check back later.")
