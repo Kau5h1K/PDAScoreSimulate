@@ -56,7 +56,7 @@ def run_score_experiment(seed, num_simulations, num_records, address_auto, addre
     simulations = [run_score_simulation(seed, num_records, pa, pp, ps) for _ in range(num_simulations)]
 
     average_scores = np.round(100 * np.mean(simulations, axis=0), 1)
-    average_scores_df = pd.DataFrame([average_scores], columns=['Overall Address Score', 'Overall Phone Score', 'Overall Specialty Score', 'Overall Demographic Score'])
+    average_scores_df = pd.DataFrame([average_scores], columns=['Address Score', 'Phone Score', 'Specialty Score', 'Overall Demographic Score'])
 
     return average_scores_df
 
@@ -66,13 +66,20 @@ with st.sidebar:
     st.divider()
     seed = st.number_input("Input the pseudo-random seed to reproduce the results:", value=1, step=1, format="%d")
     st.divider()
-    num_simulations = st.slider("Select number of simulations: ", value=1000, min_value=1, max_value=10000, step=1)
-    with st.expander("Info"):
+    num_simulations = st.slider("Select number of simulations: ", value=300, min_value=1, max_value=1000, step=1)
+    with st.expander(":bulb: Info"):
         st.info('''
         Increasing the number of simulations improves the accuracy of score predictions but also extends the runtime
         ''')
+    st.divider()
+    margin_error = st.number_input("Maximum allowed margin error:", min_value=0.0, value=1.0, step=0.1)
+    with st.expander(":bulb: Info"):
+        st.info('''
+        The margin error determines the maximum allowed difference between the **actual demographic score** and the **simulated demographic score**.
+        ''')
 
-
+variance_flag = 0
+improvement_flag = 0
 random_integers = generate_sorted_random_integers()
 
 st.title(":100: PDA Score Impact Assessment")
@@ -97,20 +104,20 @@ with st.sidebar:
 
 master_df = pd.read_csv(f"./data/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
 
-tab1, tab2 = st.tabs(["Score Prediction", "Manual Filter Impact"])
+tab1, tab2 = st.tabs([":star: Score Prediction", ":fire: Manual Filter Impact"])
 
 with tab1:
     st.text("")
-    with st.expander("See instructions"):
+    with st.expander(":bulb: See instructions"):
         st.write('''
         **Instructions:**
         - Select a market under the market dropdown menu.
         - In the **Data Quality Recommendations Breakdown** table, click on any cell under the "Volume" column so that it's highlighted.
         - Type the updated amount to change the recommendation volume and hit "Enter".
         - Click on "Apply Changes" below the table to view the Demographic score impact.
-                 
         ---
-                 
+                 ''')
+        st.info('''                 
         The **Data Quality Recommendations Breakdown** table below shows the breakdown of data quality recommendations for each attribute - address, phone, specialty.
         > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
         ''')
@@ -180,11 +187,52 @@ with tab1:
         "Volume": st.column_config.NumberColumn(disabled=False)
     })
     st.session_state['reco_bd'] = result_df
-    st.info("Edit the above values and click **Apply** to produce the score results ")
+    st.info("ℹ️ Edit the above values and click **Apply** to produce the score results ")
+
+    df_original_result = None
         
     if st.button('Apply Changes'):
         st.divider()
-        st.subheader("Estimated Demographic Scores:")
+        st.subheader("Estimated Demographic Scores After Cleanup:")
+        st.text("")
+        st.write("**Original Demographic Scores:**")
+        bar = st.progress(random_integers[0])
+        time.sleep(1)
+
+        original_df = st.session_state['reco_bd']
+        num_records = int(original_df.loc[original_df['Statistic'] == 'Number of Records', 'Volume'].values[0])
+        address_auto = float(original_df.loc[original_df['Statistic'] == 'Address - Auto Update (Final Suggestion)', 'Volume'].values[0])
+        address_manual = float(original_df.loc[original_df['Statistic'] == 'Address - Manual Review (Final Suggestion)', 'Volume'].values[0])
+        address_good = float(original_df.loc[original_df['Statistic'] == 'Address - Good (Final Suggestion)', 'Volume'].values[0])
+        phone_auto = float(original_df.loc[original_df['Statistic'] == 'Phone - Auto Update (Final Suggestion)', 'Volume'].values[0])
+        phone_manual = float(original_df.loc[original_df['Statistic'] == 'Phone - Manual Review (Final Suggestion)', 'Volume'].values[0])
+        phone_good = float(original_df.loc[original_df['Statistic'] == 'Phone - Good (Final Suggestion)', 'Volume'].values[0])
+        specialty_auto = float(original_df.loc[original_df['Statistic'] == 'Specialty - Auto Update', 'Volume'].values[0])
+        specialty_manual = float(original_df.loc[original_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
+        specialty_good = float(original_df.loc[original_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
+
+        bar.progress(random_integers[1])
+        time.sleep(1)
+
+        average_scores_df = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
+        st.session_state['average_scores_df'] = average_scores_df
+
+        bar.progress(random_integers[2])
+        time.sleep(1)
+
+        if 'average_scores_df' in st.session_state:
+            data = st.session_state['average_scores_df'].round(1).to_dict(orient='records')
+            bar.progress(random_integers[3])
+            time.sleep(1)
+            bar.progress(100)
+            df_formatted = st.session_state['average_scores_df'].map(format_floats)
+            df_original_result = df_formatted
+            col1, col2, col3 = st.columns([1, 5, 1])
+            with col2:
+                st.dataframe(df_formatted, hide_index=True)
+        
+        st.write("**Demographic Scores After Updates:**")
+
         bar = st.progress(random_integers[0])
         time.sleep(1)
         st.session_state['reco_bd'] = edited_df
@@ -216,9 +264,70 @@ with tab1:
             time.sleep(1)
             bar.progress(100)
             df_formatted = st.session_state['average_scores_df'].map(format_floats)
-            st.dataframe(df_formatted, hide_index=True)
-            st.warning('Tune the above attribute-wise scores to sync with Elixir-P UI for more accurate predictions')
-            st.toast('Process complete! The results are now ready for review')
+            col1, col2, col3 = st.columns([1, 5, 1])
+            with col2:
+                st.dataframe(df_formatted, hide_index=True)
+        
+        a1, a2 = float(df_original_result['Address Score'].iloc[0]), float(df_formatted['Address Score'].iloc[0])
+        p1, p2 = float(df_original_result['Phone Score'].iloc[0]), float(df_formatted['Phone Score'].iloc[0])
+        s1, s2 = float(df_original_result['Specialty Score'].iloc[0]), float(df_formatted['Specialty Score'].iloc[0])
+        d1, d2 = float(df_original_result['Overall Demographic Score'].iloc[0]), float(df_formatted['Overall Demographic Score'].iloc[0])
+        actual_d1 = tab1_df['CURRENT_DEMOGRAPHIC_SCORE'].iloc[0]
+        absolute_difference = round(abs(actual_d1 - d1), 1)
+        
+        if (absolute_difference > margin_error):
+            variance_flag = 1
+
+        messages = []
+        messages.append(f"**Results Summary**:")
+
+        if a2 - a1 < 0:
+            messages.append(f"- Address Score **decreased by {a1 - a2:.1f}**")
+        elif a2 - a1 > 0:
+            messages.append(f"- Address Score **increased by {a2 - a1:.1f}**")
+        else:
+            messages.append(f"- Address Score **remain unchanged**")
+
+        if p2 - p1 < 0:
+            messages.append(f"- Phone Score **decreased by {p1 - p2:.1f}**")
+        elif p2 - p1 > 0:
+            messages.append(f"- Phone Score **increased by {p2 - p1:.1f}**")
+        else:
+            messages.append(f"- Phone Score **remain unchanged**")
+
+        if s2 - s1 < 0:
+            messages.append(f"- Specialty Score **decreased by {s1 - s2:.1f}**")
+        elif s2 - s1 > 0:
+            messages.append(f"- Specialty Score **increased by {s2 - s1:.1f}**")
+        else:
+            messages.append(f"- Specialty Score **remain unchanged**")
+
+        if d2 - d1 < 0:
+            messages.append(f"- Overall Demographic Score **decreased by {d1 - d2:.1f}**")
+            improvement_flag = 1
+        elif d2 - d1 > 0:
+            messages.append(f"- Overall Demographic Score **increased by {d2 - d1:.1f}**")
+        else:
+            messages.append(f"- Overall Demographic Score **remain unchanged**")
+
+        final_message = "\n".join(messages)
+
+        if (improvement_flag == 1):
+            st.error(final_message)
+        else:
+            st.success(final_message)
+
+        if (variance_flag == 1):
+            with st.expander('⚠️ WARNING'):
+                st.warning(f'''The **simulated Demographic Scores** (**{d1}**) differ significantly from the **actual Demographic Scores** (**{actual_d1}**) on Elixir-P UI. 
+              The maximum allowable margin of error is set to **{margin_error}**. 
+              Please adjust the attribute-wise scores above to better align with the Elixir-P UI for more accurate predictions.''')
+            st.toast('''Process completed with a warning alert!''')
+        else:
+            st.toast('''Process completed successfully!''')
+        
+        
+
 
 with tab2:
     st.info("Default granularity is unique **NPI-Address** combinations")
