@@ -433,7 +433,7 @@ with tab2:
         st.divider()
         col1, col2, col3 = st.columns([4, 6, 0.1])
         with col2:
-            st.metric(label="Total Address Volume", value=str(formatted_total_sum))
+            st.metric(label="Total Volume Impacted", value=str(formatted_total_sum))
 
         st.text("")
         st.dataframe(grouped_data, hide_index=True, use_container_width=True)
@@ -510,7 +510,7 @@ with tab2:
         
         col1, col2, col3 = st.columns([4, 6, 0.1])
         with col2:
-            st.metric(label="Total Address Volume", value=str(formatted_total_sum))
+            st.metric(label="Total Volume Impacted", value=str(formatted_total_sum))
         st.text("")
 
         st.dataframe(grouped_data, hide_index=True, use_container_width=True)
