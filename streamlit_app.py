@@ -279,7 +279,8 @@ with tab1:
             variance_flag = 1
 
         messages = []
-        messages.append(f"**Results Summary**:")
+        st.write("---")
+        st.write(f"**Results Summary**:")
 
         if a2 - a1 < 0:
             messages.append(f"- Address Score **decreased by {a1 - a2:.1f}**")
