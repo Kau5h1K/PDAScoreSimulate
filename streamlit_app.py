@@ -187,7 +187,7 @@ with tab1:
         "Volume": st.column_config.NumberColumn(disabled=False)
     })
     st.session_state['reco_bd'] = result_df
-    st.info("ℹ️ Edit the above values and click **Apply** to produce the score results ")
+    st.info("ℹ️ Edit the above values and click **Apply** to produce the estimated scores after cleanup")
 
     df_original_result = None
         
