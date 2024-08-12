@@ -62,7 +62,7 @@ def run_score_experiment(seed, num_simulations, num_records, address_auto, addre
 
 # Sidebar inputs
 with st.sidebar:
-    st.subheader("Change Configuration")
+    st.subheader("⚙️ Change Configuration")
     st.divider()
     seed = st.number_input("Input the pseudo-random seed to reproduce the results:", value=1, step=1, format="%d")
     st.divider()
@@ -100,7 +100,9 @@ else:
 
 with st.sidebar:
     st.divider()
-    st.caption(f"Last Refresh Timestamp: {timestamp}")
+    st.caption(f"⌚ Last Refresh Timestamp: {timestamp}")
+    st.caption("💻 Developed by **HiLabs**")
+
 
 master_df = pd.read_csv(f"./data/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
 
@@ -176,7 +178,7 @@ with tab1:
     result_df = pd.DataFrame(data).transpose()
     result_df.reset_index(inplace=True)
     result_df.columns = ['Statistic', 'Volume']
-    st.subheader("Data Quality Recommendations Breakdown:")
+    st.subheader("📊 Data Quality Recommendations Breakdown:")
     st.text("")
 
     col1, col2, col3 = st.columns([1, 3, 0.25])  # Adjust the width ratio to your needs
@@ -193,7 +195,7 @@ with tab1:
         
     if st.button('Apply Changes'):
         st.divider()
-        st.subheader("Estimated Demographic Scores After Cleanup:")
+        st.subheader("🧮 Estimated Demographic Scores After Cleanup:")
         st.text("")
         st.write("**Original Demographic Scores:**")
         bar = st.progress(random_integers[0])
