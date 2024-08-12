@@ -129,7 +129,7 @@ with tab1:
         ''')
     st.text("")
     markets = ['AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'FL', 'GA', 'IA', 'IN', 'KY', 'LA', 'MD', 'ME', 'MO', 'NH', 'NJ', 'NV', 'NY', 'NYWEST', 'OH', 'TN', 'TX', 'VA', 'WA', 'WI', 'WV']
-    market_selected = st.selectbox(label='Choose a market', options=markets)
+    market_selected = st.selectbox(label='Choose a market', options=markets, key='tab1mkt')
 
     filtered_df = master_df[master_df['MARKET'] == market_selected]
     tab1_df = filtered_df.drop(['RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN'], axis=1).drop_duplicates()
@@ -193,7 +193,7 @@ with tab1:
         "Volume": st.column_config.NumberColumn(disabled=False)
     })
     st.session_state['reco_bd'] = result_df
-    st.info("ℹ️ Edit the above values and click **Apply** to produce the estimated scores after cleanup")
+    st.info("ℹ️ Edit the above values and click **Apply** to produce the estimated scores after data cleanup")
 
     df_original_result = None
         
@@ -369,3 +369,72 @@ with tab2:
 
     if on:
         pass
+
+    tab2_df = master_df[['MARKET', 'TIMESTAMP', 'RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN']].drop_duplicates()
+    subtab1, subtab2 = st.tabs(["Filter-wise Breakdown", "Market-wise Breakdown"])
+
+    with subtab1:
+        st.text("")
+        with st.expander(":bulb: See instructions"):
+            st.write('''
+            **Instructions:**
+            - Select a market under the market dropdown menu.
+            - In the **Data Quality Recommendations Breakdown** table, click on any cell under the "Volume" column so that it's highlighted.
+            - Type the updated amount to change the recommendation volume and hit "Enter".
+            - Click on "Apply Changes" below the table to view the Demographic score impact.
+            ---
+                    ''')
+            st.info('''                 
+            The **Data Quality Recommendations Breakdown** table below shows the breakdown of data quality recommendations for each attribute - address, phone, specialty.
+            > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
+            ''')
+        st.text("")
+
+        all_markets = ['All'] + sorted(tab2_df['MARKET'].unique())
+        selected_markets = st.multiselect('Select Market(s)', options=all_markets, default='All')
+
+        if 'All' in selected_markets:
+            filtered_data = tab2_df
+        else:
+            filtered_data = tab2_df[tab2_df['MARKET'].isin(selected_markets)]
+
+        all_rule_combo_lengths = ['All'] + sorted(tab2_df['RULE_COMBO_LENGTH'].unique())
+        selected_rule_combo_lengths = st.multiselect('Select Rule Combo Length', options=all_rule_combo_lengths, default=[1])
+
+        if 'All' in selected_rule_combo_lengths:
+            filtered_data = filtered_data
+        else:
+            filtered_data = filtered_data[filtered_data['RULE_COMBO_LENGTH'].isin(selected_rule_combo_lengths)]
+
+        grouped_data = filtered_data.groupby('RULE_TO_DISABLE').agg({'NUM_RECORDS_AUTOMATION_GAIN': 'sum'}).reset_index()
+        grouped_data.columns = ['Manual Filter', 'Address Volume']
+        grouped_data = grouped_data.sort_values(by='Address Volume', ascending=False)
+
+        total_sum = grouped_data['Address Volume'].sum()
+        total_row = pd.DataFrame(data={'Manual Filter': ['Total'], 'Address Volume': [total_sum]})
+        grouped_data = pd.concat([grouped_data, total_row], ignore_index=True)
+
+        st.dataframe(grouped_data, hide_index=True, use_container_width=True)
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.metric(label="Total Address Volume", value=total_sum)
+
+
+
+    with subtab2:
+        st.text("")
+        with st.expander(":bulb: See instructions"):
+            st.write('''
+            **Instructions:**
+            - Select a market under the market dropdown menu.
+            - In the **Data Quality Recommendations Breakdown** table, click on any cell under the "Volume" column so that it's highlighted.
+            - Type the updated amount to change the recommendation volume and hit "Enter".
+            - Click on "Apply Changes" below the table to view the Demographic score impact.
+            ---
+                    ''')
+            st.info('''                 
+            The **Data Quality Recommendations Breakdown** table below shows the breakdown of data quality recommendations for each attribute - address, phone, specialty.
+            > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
+            ''')
+        st.text("")
