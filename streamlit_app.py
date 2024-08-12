@@ -326,7 +326,7 @@ with tab1:
 
         if (variance_flag == 1):
             with st.expander('⚠️ WARNING'):
-                st.warning(f'''The **simulated Demographic Scores** (**{d1}**) differ significantly from the **actual Demographic Scores** (**{actual_d1}**) on Elixir-P UI. 
+                st.warning(f'''The **simulated Demographic Score** (**{d1}**) differs significantly from the **actual Demographic Score** (**{actual_d1}**) on Elixir-P UI. 
               The maximum allowable margin of error is set to **{margin_error}**. 
               Please adjust the attribute-wise scores above to better align with the Elixir-P UI for more accurate predictions.''')
             st.toast('''Process completed with a warning alert!''')
