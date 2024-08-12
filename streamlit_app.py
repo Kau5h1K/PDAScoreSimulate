@@ -411,14 +411,13 @@ with tab2:
         grouped_data = grouped_data.sort_values(by='Address Volume', ascending=False)
 
         total_sum = grouped_data['Address Volume'].sum()
-        total_row = pd.DataFrame(data={'Manual Filter': ['Total'], 'Address Volume': [total_sum]})
-        grouped_data = pd.concat([grouped_data, total_row], ignore_index=True)
+        formatted_total_sum = f"{total_sum:,}"
 
         st.dataframe(grouped_data, hide_index=True, use_container_width=True)
 
-        col1, col2, col3 = st.columns([1, 2, 1])
+        col1, col2, col3 = st.columns([4, 6, 0.1])
         with col2:
-            st.metric(label="Total Address Volume", value=total_sum)
+            st.metric(label="Total Address Volume", value=str(formatted_total_sum))
 
 
 
@@ -438,3 +437,32 @@ with tab2:
             > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
             ''')
         st.text("")
+
+        all_markets = ['All'] + sorted(tab2_df['MARKET'].unique())
+        selected_markets = st.multiselect('Select Market(s)', options=all_markets, default='All')
+
+        if 'All' in selected_markets:
+            filtered_data = tab2_df
+        else:
+            filtered_data = tab2_df[tab2_df['MARKET'].isin(selected_markets)]
+
+        all_rule_combo_lengths = ['All'] + sorted(tab2_df['RULE_COMBO_LENGTH'].unique())
+        selected_rule_combo_lengths = st.multiselect('Select Rule Combo Length', options=all_rule_combo_lengths, default=[1])
+
+        if 'All' in selected_rule_combo_lengths:
+            filtered_data = filtered_data
+        else:
+            filtered_data = filtered_data[filtered_data['RULE_COMBO_LENGTH'].isin(selected_rule_combo_lengths)]
+
+        grouped_data = filtered_data.groupby('RULE_TO_DISABLE').agg({'NUM_RECORDS_AUTOMATION_GAIN': 'sum'}).reset_index()
+        grouped_data.columns = ['Manual Filter', 'Address Volume']
+        grouped_data = grouped_data.sort_values(by='Address Volume', ascending=False)
+
+        total_sum = grouped_data['Address Volume'].sum()
+        formatted_total_sum = f"{total_sum:,}"
+
+        st.dataframe(grouped_data, hide_index=True, use_container_width=True)
+
+        col1, col2, col3 = st.columns([4, 6, 0.1])
+        with col2:
+            st.metric(label="Total Address Volume", value=str(formatted_total_sum))
