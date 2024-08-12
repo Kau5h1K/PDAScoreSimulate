@@ -121,7 +121,7 @@ with st.sidebar:
 
 master_df = pd.read_csv(f"./data/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
 
-tab1, tab2 = st.tabs([":star: Score Prediction", ":fire: Manual Filter Impact"])
+tab1, tab2 = st.tabs([":star: Score Prediction", "📉 Manual Filter Impact"])
 
 with tab1:
     st.write("> This section helps users estimate the Provider Directory Accuracy (PDA) scores following targeted cleanup efforts.")
@@ -381,7 +381,7 @@ with tab2:
     st.text("")
 
     tab2_df = master_df[['MARKET', 'TIMESTAMP', 'RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN']].drop_duplicates()
-    subtab1, subtab2 = st.tabs(["Filter-wise Breakdown", "Market-wise Breakdown"])
+    subtab1, subtab2, subtab3 = st.tabs(["🧩 Filter-wise Breakdown", "🌍 Market-wise Breakdown", "📑 Manual Filter Glossary"])
 
     with subtab1:
         st.text("")
@@ -509,6 +509,81 @@ with tab2:
         st.text("")
 
         st.dataframe(grouped_data, hide_index=True, use_container_width=True)
+        st.info("The counts represent unique **NPI-Address** entries")
+        st.markdown("[📑 Manual Filter Glossary](#section-1)")
+
+
+    with subtab3:
+        st.write("> This section offers user-friendly descriptions for each manual filter.")
+        st.text("")
+        st.write("### 📑 Manual Filter Glossary")
+
+        data = {
+            "FILTER NAME": [
+                "ASH_VENDOR_S",
+                "BH_PGM_S",
+                "BH_SPCLTY_S",
+                "CLM_ADRS_FIX_S",
+                "CLM_INDIV_1_MNTH_CK_S",
+                "CLM_RLTD_PADRS_KEY_S",
+                "DIR_DSPLY_IND_S",
+                "DIR_DSPLY_MAN_TO_GOOD_S",
+                "HIGHMARK_S",
+                "IPA_TIN_S",
+                "ISPCP_S",
+                "LHO_TIN_S",
+                "LN_CRCTN_S",
+                "NO_RENDERING_NPI_CLAIMS_S",
+                "NPI_NTWK_LOSS_S",
+                "NTWK_FILTER_S",
+                "NTWK_LOSS_S",
+                "OPT_VENDOR_S",
+                "PADRS_EFF_DT_S",
+                "R3NOTFOUND_S",
+                "RLTN_CNT_S",
+                "SPCLTY_CNT_S",
+                "SUPPRESS_HOSP_SPCLTY_S",
+                "USER_FEEDBACK_S",
+                "VIP_TIN_NPI_S",
+                "VIP_TIN_S",
+                "WORKER_COMP_NTWK_CHK_S"
+            ],
+            "FILTER DESCRIPTION": [
+                "Vendor Record Exclusion - ASH",
+                "Vendor Record Exclusion - Beacon Health",
+                "Do not terminate BH Individual Specialties (Beacon Health)",
+                "Claims Address 0.43 issue",
+                "Claims in last 1 month: Move to Good",
+                "SPS Related PADRS Key present in Claims: Move to Good",
+                "Dir Display Indicator D and verified by LN: Move to Good",
+                "Dir Display Indicator N: Move to Good",
+                "Do not terminate if related organization has Highmark program",
+                "Do not terminate IPA TINs",
+                "Do not terminate PCP Providers with members",
+                "LHO Tax id: Move to Good",
+                "LexisNexis Address Correction Check",
+                "No Rendering NPI on Claims TIN, Zip and Address",
+                "Do not terminate if NPI loses any networks (DEPENDENT FILTER)",
+                "Do not terminate if address contains mixed networks",
+                "Do not terminate if relationship loses any networks (DEPENDENT FILTER)",
+                "Vendor Record Exclusion - Optometrist Specialty",
+                "Do not terminate if address was created in less than 6 months",
+                "Do not terminate if address has no R3 recommendations",
+                "Do not terminate if this leads to loss of relationship with the organization.",
+                "Do not terminate if specialty is lost at address for the relationship (DEPENDENT FILTER)",
+                "Do not terminate hospital-based specialties",
+                "Move Good, UserMarked",
+                "Do not terminate VIP TIN NPI",
+                "Do not terminate VIP TINs",
+                "Do not terminate address record with Wellcomp network"
+                ]
+            }
+
+        df_manfil = pd.DataFrame(data)
 
 
 
+        df_manfil.style.set_properties(**{'text-align': 'center'}).set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}])
+        st.markdown('<style>.col_heading{text-align: center;}</style>', unsafe_allow_html=True)
+        df_manfil.columns = ['<div class="col_heading">'+col+'</div>' for col in df_manfil.columns] 
+        st.write(df_manfil.to_html(escape=False, index=False), unsafe_allow_html=True)
