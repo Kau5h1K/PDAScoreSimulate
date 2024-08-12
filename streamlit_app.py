@@ -381,7 +381,7 @@ with tab2:
     st.text("")
 
     tab2_df = master_df[['MARKET', 'TIMESTAMP', 'RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN']].drop_duplicates()
-    subtab1, subtab2, subtab3 = st.tabs(["🧩 Filter-wise Breakdown", "🌍 Market-wise Breakdown", "📑 Manual Filter Glossary"])
+    subtab1, subtab2, subtab3 = st.tabs(["📊 Filter-wise Breakdown", "🌍 Market-wise Breakdown", "📑 Glossary"])
 
     with subtab1:
         st.text("")
@@ -437,7 +437,12 @@ with tab2:
 
         st.text("")
         st.dataframe(grouped_data, hide_index=True, use_container_width=True)
-        st.info("The counts represent unique **NPI-Address** entries")
+        with st.expander(":bulb: Info"):
+            st.info('''
+            - The counts reflect unique **NPI-Address** combinations.
+            - For descriptions of the Manual Filter column names mentioned above, please refer to the **Glossary** tab.
+            ''')
+            
 
 
     with subtab2:
@@ -454,14 +459,14 @@ with tab2:
             st.write('''
             **Instructions:**  
             1. To view markets most impacted by the Loss of Relationship filter (including overlaps with other filters):
-                - "RLTN_CNT_S" represents the Loss of Relationship filter. Refer to the RULE DETAILS tab for mapping.
+                - "RLTN_CNT_S" represents the Loss of Relationship filter. Refer to the **Glossary** tab for mapping.
                 - Select "RLTN_CNT_S" from the **Manual Filter** dropdown.
                 - Choose "All" from the **Rule Combo Length** dropdown.
             ''')
             st.text("")
             st.write('''
             2. To view markets most impacted by the Beacon filter (excluding overlaps with other filters):
-                - "BH_PGM_S" represents the Beacon filter. Refer to the RULE DETAILS tab for mapping.
+                - "BH_PGM_S" represents the Beacon filter. Refer to the **Glossary** tab for mapping.
                 - Select "BH_PGM_S" from the **Manual Filter** dropdown.
                 - Choose "1" from the **Rule Combo Length** dropdown.
             ''')
@@ -509,15 +514,17 @@ with tab2:
         st.text("")
 
         st.dataframe(grouped_data, hide_index=True, use_container_width=True)
-        st.info("The counts represent unique **NPI-Address** entries")
-        st.markdown("[Section 1](#section-1)")
+        with st.expander(":bulb: Info"):
+            st.info('''
+            - The counts reflect unique **NPI-Address** combinations.
+            - For descriptions of the Manual Filter column names mentioned above, please refer to the **Glossary** tab.
+            ''')
 
 
     with subtab3:
         st.write("> This section offers user-friendly descriptions for each manual filter.")
         st.text("")
         st.write("### 📑 Manual Filter Glossary")
-        st.header("Section 1")
 
         data = {
             "FILTER NAME": [
@@ -588,3 +595,5 @@ with tab2:
         st.markdown('<style>.col_heading{text-align: center;}</style>', unsafe_allow_html=True)
         df_manfil.columns = ['<div class="col_heading">'+col+'</div>' for col in df_manfil.columns] 
         st.write(df_manfil.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+
