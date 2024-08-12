@@ -64,12 +64,16 @@ def run_score_experiment(seed, num_simulations, num_records, address_auto, addre
 with st.sidebar:
     st.subheader("⚙️ Change Configuration")
     st.divider()
-    seed = st.number_input("Input the pseudo-random seed to reproduce the results:", value=1, step=1, format="%d")
+    seed = st.number_input("Set a seed to reproduce random outcomes:", value=1, step=1, format="%d")
+    with st.expander(":bulb: Info"):
+        st.info('''
+        Setting a seed ensures consistent and reproducible random outcomes each time the code runs.
+        ''')
     st.divider()
     num_simulations = st.slider("Select number of simulations: ", value=300, min_value=1, max_value=1000, step=1)
     with st.expander(":bulb: Info"):
         st.info('''
-        Increasing the number of simulations improves the accuracy of score predictions but also extends the runtime
+        Increasing the number of simulations improves the accuracy of score predictions but also extends the runtime.
         ''')
     st.divider()
     margin_error = st.number_input("Maximum allowed margin error:", min_value=0.0, value=1.0, step=0.1)
