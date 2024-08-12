@@ -60,6 +60,17 @@ def run_score_experiment(seed, num_simulations, num_records, address_auto, addre
 
     return average_scores_df
 
+def get_unique_rules(df, column_name):
+
+    rules = df[column_name].dropna()
+    rules = rules[rules.apply(lambda x: isinstance(x, str))]
+    rules = rules.str.split('|').explode().unique()
+    rules = [rule for rule in rules if rule.strip()]
+    return sorted(rules)
+
+
+
+
 # Sidebar inputs
 with st.sidebar:
     st.subheader("⚙️ Change Configuration")
@@ -86,7 +97,7 @@ variance_flag = 0
 improvement_flag = 0
 random_integers = generate_sorted_random_integers()
 
-st.title(":100: PDA Score Impact Assessment")
+st.title(":100: Provider Directory Score Guide")
 st.write("Utility tool to assess the impact of score changes when performing anomalous data cleanup in ElevanceHealth's Provider Directory data (SPS).")
 
 folder_path = "data"
@@ -113,20 +124,22 @@ master_df = pd.read_csv(f"./data/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
 tab1, tab2 = st.tabs([":star: Score Prediction", ":fire: Manual Filter Impact"])
 
 with tab1:
+    st.write("> This section helps users estimate the Provider Directory Accuracy (PDA) scores following targeted cleanup efforts.")
     st.text("")
     with st.expander(":bulb: See instructions"):
+        st.info('''                 
+        The **Data Quality Recommendations Breakdown** table below shows the breakdown of data quality recommendations for each attribute - address, phone, specialty.
+        > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
+        ''')
+        st.divider()
         st.write('''
         **Instructions:**
         - Select a market under the market dropdown menu.
         - In the **Data Quality Recommendations Breakdown** table, click on any cell under the "Volume" column so that it's highlighted.
         - Type the updated amount to change the recommendation volume and hit "Enter".
         - Click on "Apply Changes" below the table to view the Demographic score impact.
-        ---
-                 ''')
-        st.info('''                 
-        The **Data Quality Recommendations Breakdown** table below shows the breakdown of data quality recommendations for each attribute - address, phone, specialty.
-        > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
         ''')
+
     st.text("")
     markets = ['AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'FL', 'GA', 'IA', 'IN', 'KY', 'LA', 'MD', 'ME', 'MO', 'NH', 'NJ', 'NV', 'NY', 'NYWEST', 'OH', 'TN', 'TX', 'VA', 'WA', 'WI', 'WV']
     market_selected = st.selectbox(label='Choose a market', options=markets, key='tab1mkt')
@@ -364,11 +377,8 @@ with tab1:
 
 
 with tab2:
-    st.info("The counts represent unique **NPI-Address** entries")
-    on = st.toggle("Turn ON to change the granularity to RLTD_PADRS_KEY")
-
-    if on:
-        pass
+    st.write("> This section provides insight into the impact of safety rules (manual filters) in the PDA Address report (Rule 29) that hinder cleanup.")
+    st.text("")
 
     tab2_df = master_df[['MARKET', 'TIMESTAMP', 'RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN']].drop_duplicates()
     subtab1, subtab2 = st.tabs(["Filter-wise Breakdown", "Market-wise Breakdown"])
@@ -376,17 +386,25 @@ with tab2:
     with subtab1:
         st.text("")
         with st.expander(":bulb: See instructions"):
-            st.write('''
-            **Instructions:**
-            - Select a market under the market dropdown menu.
-            - In the **Data Quality Recommendations Breakdown** table, click on any cell under the "Volume" column so that it's highlighted.
-            - Type the updated amount to change the recommendation volume and hit "Enter".
-            - Click on "Apply Changes" below the table to view the Demographic score impact.
-            ---
-                    ''')
             st.info('''                 
-            The **Data Quality Recommendations Breakdown** table below shows the breakdown of data quality recommendations for each attribute - address, phone, specialty.
-            > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
+            - The "**Filter-wise Breakdown**" section displays the volume of address records triggered by each manual filter.
+            - You can filter the results by selecting one or more markets using the **Market** dropdown.
+            - Additionally, the results can be refined to show only records impacted by a single filter (low-hanging fruits) using the **Rule Combo Length** dropdown.
+
+            > **Rule Combo Length** refers to the "number of filters impacting a record." Selecting a value of 1 will display only records affected by a single filter.
+            ''')
+            st.divider()
+            st.write('''
+            **Instructions:**  
+            1. To view the filter breakdown for records impacted by a single filter across all markets:
+                - Select "All" from the **Market** dropdown.
+                - Choose "1" from the **Rule Combo Length** dropdown.
+            ''')
+            st.text("")
+            st.write('''
+            2. To view the filter breakdown where records are impacted by multiple filters for the Florida market:
+                - Select "FL" from the **Market** dropdown.
+                - Choose "All" from the **Rule Combo Length** dropdown.
             ''')
         st.text("")
 
@@ -412,57 +430,85 @@ with tab2:
 
         total_sum = grouped_data['Address Volume'].sum()
         formatted_total_sum = f"{total_sum:,}"
-
-        st.dataframe(grouped_data, hide_index=True, use_container_width=True)
-
+        st.divider()
         col1, col2, col3 = st.columns([4, 6, 0.1])
         with col2:
             st.metric(label="Total Address Volume", value=str(formatted_total_sum))
 
+        st.text("")
+        st.dataframe(grouped_data, hide_index=True, use_container_width=True)
+        st.info("The counts represent unique **NPI-Address** entries")
 
 
     with subtab2:
         st.text("")
         with st.expander(":bulb: See instructions"):
-            st.write('''
-            **Instructions:**
-            - Select a market under the market dropdown menu.
-            - In the **Data Quality Recommendations Breakdown** table, click on any cell under the "Volume" column so that it's highlighted.
-            - Type the updated amount to change the recommendation volume and hit "Enter".
-            - Click on "Apply Changes" below the table to view the Demographic score impact.
-            ---
-                    ''')
             st.info('''                 
-            The **Data Quality Recommendations Breakdown** table below shows the breakdown of data quality recommendations for each attribute - address, phone, specialty.
-            > The number of records represents the unique NPI-Address entries within the scope of directory validation for a specific market.
+            - The "**Market-wise Breakdown**" section shows the volume of address records by market triggered by each manual filter.
+            - Use the **Manual Filter** dropdown to select one or more filters.
+            - Refine results to show only records impacted by a single filter (low-hanging fruits) using the **Rule Combo Length** dropdown.
+
+            > **Rule Combo Length** indicates the number of filters impacting a record. Selecting "1" shows records affected by a single filter.
+            ''')
+            st.divider()
+            st.write('''
+            **Instructions:**  
+            1. To view markets most impacted by the Loss of Relationship filter (including overlaps with other filters):
+                - "RLTN_CNT_S" represents the Loss of Relationship filter. Refer to the RULE DETAILS tab for mapping.
+                - Select "RLTN_CNT_S" from the **Manual Filter** dropdown.
+                - Choose "All" from the **Rule Combo Length** dropdown.
+            ''')
+            st.text("")
+            st.write('''
+            2. To view markets most impacted by the Beacon filter (excluding overlaps with other filters):
+                - "BH_PGM_S" represents the Beacon filter. Refer to the RULE DETAILS tab for mapping.
+                - Select "BH_PGM_S" from the **Manual Filter** dropdown.
+                - Choose "1" from the **Rule Combo Length** dropdown.
+            ''')
+            st.text("")
+            st.write('''
+            3. To view markets most impacted by all manual filters (including overlaps):
+                - Select "All" from the **Manual Filter** dropdown.
+                - Choose "All" from the **Rule Combo Length** dropdown.
             ''')
         st.text("")
 
-        all_markets = ['All'] + sorted(tab2_df['MARKET'].unique())
-        selected_markets = st.multiselect('Select Market(s)', options=all_markets, default='All')
+        unique_rules = get_unique_rules(tab2_df, 'RULE_TO_DISABLE')
+        unique_lengths = sorted(tab2_df['RULE_COMBO_LENGTH'].unique())
 
-        if 'All' in selected_markets:
+        all_rules = ['All'] + unique_rules
+        selected_rules = st.multiselect('Select Manual Filter(s)', all_rules, default='All', key='tab2mf')
+
+        if 'All' in selected_rules:
             filtered_data = tab2_df
         else:
-            filtered_data = tab2_df[tab2_df['MARKET'].isin(selected_markets)]
+            mask = tab2_df['RULE_TO_DISABLE'].apply(
+            lambda x: isinstance(x, str) and any(rule in x.split('|') for rule in selected_rules)
+            )
+            filtered_data = tab2_df[mask]
 
-        all_rule_combo_lengths = ['All'] + sorted(tab2_df['RULE_COMBO_LENGTH'].unique())
-        selected_rule_combo_lengths = st.multiselect('Select Rule Combo Length', options=all_rule_combo_lengths, default=[1])
+        all_rule_combo_lengths = ['All'] + unique_lengths
+        selected_rule_combo_lengths = st.multiselect('Select Rule Combo Length', options=all_rule_combo_lengths, default='All', key='tab2rc2')
 
         if 'All' in selected_rule_combo_lengths:
             filtered_data = filtered_data
         else:
             filtered_data = filtered_data[filtered_data['RULE_COMBO_LENGTH'].isin(selected_rule_combo_lengths)]
 
-        grouped_data = filtered_data.groupby('RULE_TO_DISABLE').agg({'NUM_RECORDS_AUTOMATION_GAIN': 'sum'}).reset_index()
+        grouped_data = filtered_data.groupby('MARKET').agg({'NUM_RECORDS_AUTOMATION_GAIN': 'sum'}).reset_index()
         grouped_data.columns = ['Manual Filter', 'Address Volume']
         grouped_data = grouped_data.sort_values(by='Address Volume', ascending=False)
 
         total_sum = grouped_data['Address Volume'].sum()
         formatted_total_sum = f"{total_sum:,}"
-
-        st.dataframe(grouped_data, hide_index=True, use_container_width=True)
-
+        st.divider()
+        
         col1, col2, col3 = st.columns([4, 6, 0.1])
         with col2:
             st.metric(label="Total Address Volume", value=str(formatted_total_sum))
+        st.text("")
+
+        st.dataframe(grouped_data, hide_index=True, use_container_width=True)
+
+
+
