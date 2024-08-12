@@ -510,13 +510,14 @@ with tab2:
 
         st.dataframe(grouped_data, hide_index=True, use_container_width=True)
         st.info("The counts represent unique **NPI-Address** entries")
-        st.markdown("[📑 Manual Filter Glossary](#section-1)")
+        st.markdown("[Section 1](#section-1)")
 
 
     with subtab3:
         st.write("> This section offers user-friendly descriptions for each manual filter.")
         st.text("")
         st.write("### 📑 Manual Filter Glossary")
+        st.header("Section 1")
 
         data = {
             "FILTER NAME": [
