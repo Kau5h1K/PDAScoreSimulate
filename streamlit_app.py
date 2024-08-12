@@ -115,7 +115,7 @@ else:
 
 with st.sidebar:
     st.divider()
-    st.caption(f"⌚ Last Refresh Timestamp: {timestamp}")
+    st.caption(f"⌚ Last Refresh Timestamp: **{timestamp}**")
     st.caption("💻 Developed by **HiLabs**")
 
 
