@@ -97,7 +97,7 @@ variance_flag = 0
 improvement_flag = 0
 random_integers = generate_sorted_random_integers()
 
-st.title(":100: Provider Directory Score Guide")
+st.title("🎯 Provider Directory Score Guide")
 st.write("Utility tool to assess the impact of score changes when performing anomalous data cleanup in ElevanceHealth's Provider Directory data (SPS).")
 
 folder_path = "data"
@@ -121,7 +121,7 @@ with st.sidebar:
 
 master_df = pd.read_csv(f"./data/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
 
-tab1, tab2, tab3 = st.tabs([":star: Score Prediction", "📉 Manual Filter Impact", "🌐 Directory 360°"])
+tab1, tab2, tab3, tab4 = st.tabs([":star: Score Prediction", "📉 Manual Filter Impact", "🌐 Directory 360°", "❓ Scoring Methodology"])
 
 with tab1:
     st.write("> This section helps users estimate the Provider Directory Accuracy (PDA) scores following targeted cleanup efforts.")
@@ -598,3 +598,112 @@ with tab3:
     st.write("> This section offers visualizations on the overall health of the provider directory.")
     st.text("")
     st.error("🚧 This page is currently under construction. Please check back later.")
+
+
+with tab4:
+    st.text("")
+    st.write("### 💯 Elixir-P Provider Directory Scoring Methodology")
+    st.caption("Leveraging CMS scoring as a foundation while incorporating Elevance Health’s network accuracy and automation drives a more meaningful and comprehensive improvement.")
+    st.markdown("""
+    > This section explains the scoring methodology used to assess the quality of healthcare provider directory data. 
+    We evaluate key attributes for each record, which represents a unique **NPI-Address** entry, to calculate a combined "Row Score," 
+    contributing to an overall Demographic Score.
+    """)
+    st.divider()
+
+    # Scoring Process
+    st.write("#### ➡️ Scoring Process")
+
+    st.markdown("""
+    1. **Assessment Categories**:  
+    Each attribute (Address, Phone, Specialty) in a record is evaluated based on the following recommendations:
+        - **Good**
+        - **Manual Review**
+        - **Bad**
+    """)
+
+    st.markdown("""
+    2. **Weight Assignments**:
+        - **Address and Phone** are assigned a weight of 3 each.
+        - **Specialty** is assigned a weight of 1.
+        - Recommendations are scored as follows:
+            - **Good**: 100%
+            - **Manual Review**: 80%
+            - **Bad**: 0%
+    """)
+
+    with st.expander("Example Calculation"):
+        st.info("""
+        If a record has the following recommendations:
+        
+        - **Address**: Bad
+        - **Phone**: Manual Review
+        - **Specialty**: Good
+        
+        The attribute-specific scores would be:
+        
+        - **Address Score**: 0% of 3 = 0
+        - **Phone Score**: 80% of 3 = 2.4
+        - **Specialty Score**: 100% of 1 = 1
+        """)
+
+    st.divider()
+
+    st.markdown("#### ➡️ Calculating Attribute Scores")
+
+    st.markdown("""
+    To determine the overall score for each attribute across all records:
+
+    - **Address Score** = (Sum of all address scores) / (Total number of records × 3)
+    - **Phone Score** = (Sum of all phone scores) / (Total number of records × 3)
+    - **Specialty Score** = (Sum of all specialty scores) / (Total number of records × 1)
+    """)
+
+    st.divider()
+
+    st.markdown("#### ➡️ Determining the Row Score")
+
+    st.markdown("""
+    The `ROW_SCORE` for each record (NPI-Address entry) is calculated using the following formula:
+
+    > **`ROW_SCORE`** = `RECORD_MAX_SCORE` - max((`ADDRESS_MAX_SCORE` - `ADDRESS_SCORE`), (`PHONE_MAX_SCORE` - `PHONE_SCORE`), (`SPECIALTY_MAX_SCORE` - `SPECIALTY_SCORE`))
+
+    Where:
+    - `RECORD_MAX_SCORE` = 3
+    - `ADDRESS_MAX_SCORE` = 3
+    - `PHONE_MAX_SCORE` = 3
+    - `SPECIALTY_MAX_SCORE` = 1
+    """)
+
+    st.divider()
+    
+    st.markdown("#### ➡️ Calculating the Overall Demographic Score")
+
+    st.markdown("""
+    The **Overall Demographic Score** is the average of the Row Scores across all records, calculated using the formula:
+
+    > **Overall Demographic Score** = (Sum of all Row Scores) / (Total number of records × 3)
+    """)
+
+    st.text("")
+
+    st.info("""
+    This scoring methodology provides a comprehensive measure of data quality for each unique NPI-Address entry in the directory, 
+    ensuring that the integrity of the data is accurately assessed and quantified.
+    """)
+
+    st.divider()
+
+    with st.expander("Directory Scorecard Explainer Primer"):
+        st.info("The Directory Scorecard Explainer provides insights into the calculation of demographic and network scores, utilizing the CMS methodology. To download the primer, simply click the download button below.")
+
+        pdf_file = "data/ElixirP_ScoreCard_Explainer.pdf"
+        with open(pdf_file, "rb") as f:
+            pdf_bytes = f.read()
+
+        st.download_button(
+            label="Download Scorecard Primer PDF",
+            data=pdf_bytes,
+            file_name="ElixirP_Scorecard_Explainer.pdf",
+            mime="application/pdf"
+        )
