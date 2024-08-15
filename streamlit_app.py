@@ -74,9 +74,6 @@ def get_unique_rules(df, column_name):
 # Sidebar inputs
 with st.sidebar:
 
-    logo = Image.open('data/hilabs_logo_v2.png')
-    st.image(logo, use_column_width=True)
-
     st.subheader("⚙️ Change Configuration")
     st.divider()
     seed = st.number_input("Set a seed to reproduce random outcomes:", value=1, step=1, format="%d")
@@ -96,6 +93,11 @@ with st.sidebar:
         st.info('''
         The margin error determines the maximum allowed difference between the **actual demographic score** and the **simulated demographic score**.
         ''')
+    
+    st.divider()
+
+    logo = Image.open('data/hilabs_logo_v2.png')
+    st.image(logo, use_column_width=True)
 
 
 variance_flag = 0
