@@ -74,8 +74,8 @@ def get_unique_rules(df, column_name):
 # Sidebar inputs
 with st.sidebar:
 
-    logo = Image.open('data/hilabs_logo.png')
-    st.image(logo, caption='HiLabs Logo', use_column_width=True)
+    logo = Image.open('data/hilabs_logo_transparent.png')
+    st.image(logo, use_column_width=True)
 
     st.subheader("⚙️ Change Configuration")
     st.divider()
