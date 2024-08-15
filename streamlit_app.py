@@ -75,11 +75,7 @@ def get_unique_rules(df, column_name):
 with st.sidebar:
 
     logo = Image.open('data/hilabs_logo_v2.png')
-    shrink_factor = 0.1
-    width, height = logo.size
-    new_size = (int(width * shrink_factor), int(height * shrink_factor))
-    shrunk_logo = logo.resize(new_size)
-    st.image(shrunk_logo, use_column_width=True)
+    st.image(logo, use_column_width=True)
 
     st.subheader("⚙️ Change Configuration")
     st.divider()
