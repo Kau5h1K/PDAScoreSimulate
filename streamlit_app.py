@@ -75,7 +75,7 @@ def get_unique_rules(df, column_name):
 with st.sidebar:
 
     logo = Image.open('data/hilabs_logo_v2.png')
-    st.image(logo, use_column_width=True)
+    st.image(logo, use_column_width=False)
 
     st.subheader("⚙️ Change Configuration")
     st.divider()
