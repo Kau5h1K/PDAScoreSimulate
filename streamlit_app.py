@@ -6,7 +6,7 @@ import re
 import subprocess
 import time
 import random
-
+from PIL import Image
 
 def format_floats(x):
     return f'{x:.1f}' if isinstance(x, (float, int)) else x
@@ -92,6 +92,10 @@ with st.sidebar:
         st.info('''
         The margin error determines the maximum allowed difference between the **actual demographic score** and the **simulated demographic score**.
         ''')
+
+    logo = Image.open('data/hilabs_logo.png')
+    st.image(logo, caption='HiLabs Logo', use_column_width=True)
+
 
 variance_flag = 0
 improvement_flag = 0
@@ -695,7 +699,7 @@ with tab4:
     st.divider()
 
     with st.expander("Directory Scorecard Explainer Primer"):
-        st.info("The Directory Scorecard Explainer provides insights into the calculation of demographic and network scores, utilizing the CMS methodology. To download the primer, simply click the download button below.")
+        st.info("The Directory Scorecard Explainer provides additional insights into the calculation of demographic and network scores, utilizing the CMS methodology. To download the primer, simply click the download button below.")
 
         pdf_file = "data/ElixirP_ScoreCard_Explainer.pdf"
         with open(pdf_file, "rb") as f:
