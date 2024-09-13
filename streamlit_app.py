@@ -105,7 +105,7 @@ improvement_flag = 0
 random_integers = generate_sorted_random_integers()
 
 st.title("🎯 Provider Directory Score Guide")
-st.write("Utility tool to assess the impact of score changes when performing anomalous data cleanup in Provider Directory data.")
+st.write("Utility tool to assess the impact of score changes when performing anomalous data cleanup in provider directory data.")
 
 folder_path = "data"
 filename_pattern = re.compile(r"ELIXIR_adhoc_PDAScorerSummary_(\d{8}).csv")
