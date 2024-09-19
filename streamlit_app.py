@@ -7,9 +7,32 @@ import subprocess
 import time
 import random
 from PIL import Image
+from datetime import datetime
+from git import Repo
 
 def format_floats(x):
     return f'{x:.1f}' if isinstance(x, (float, int)) else x
+
+def git_operations(csv_file_path):
+    try:
+        # Initialize repo object
+        repo = Repo(os.getcwd())
+
+        # Perform git pull --rebase
+        origin = repo.remote(name='origin')
+        origin.pull(rebase=True)
+
+        # Add the CSV file
+        repo.git.add(csv_file_path)
+
+        # Commit changes
+        repo.index.commit("Automated commit: CSV file saved")
+
+        # Push to the repository
+        origin.push()
+        st.success("Changes pushed to the repository successfully!")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
 
 def generate_sorted_random_integers(n):
     random_integers = random.sample(range(101), n)
@@ -442,7 +465,7 @@ with tab1:
         
         if st.button('Apply Changes', key = 't1_2'):
             st.divider()
-            st.subheader("🧮 Estimated Demographic Scores After Cleanup:")
+            st.subheader("🧮 Estimating Demographic Scores After Cleanup:")
             st.text("")
 
             original_df = st.session_state['reco1_2_bd']
@@ -521,8 +544,9 @@ with tab1:
 
                 st.write("Collating and Saving the Result...")
                 time.sleep(1)
-                
-                merged_df3.to_csv(f'./data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp}.csv', index=False)
+                csv_file_path = f"./data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp}.csv"
+                merged_df3.to_csv(csv_file_path, index=False)
+                git_operations(csv_file_path)
                 time.sleep(1)
                 status.update(
                     label="Process complete!", state="complete", expanded=False
