@@ -20,7 +20,10 @@ def git_operations(csv_file_path):
 
         # Perform git pull --rebase
         origin = repo.remote(name='origin')
-        origin.pull(rebase=True)
+        pull_info = origin.pull(rebase=True)
+
+        if not pull_info:
+            st.error("Could not pull from the remote repository. Check your SSH or HTTPS configuration.")
 
         # Add the CSV file
         repo.git.add(csv_file_path)
