@@ -472,7 +472,8 @@ with tab1:
             st.text("")
 
             original_df = st.session_state['reco1_2_bd']
-            mkt_list = sorted(original_df['Market'].unique())
+            # mkt_list = sorted(original_df['Market'].unique())
+            mkt_list = ["AZ", "AR"]
             all_mkt_df = pd.DataFrame()
 
             with st.status("Computing Scores After Data Cleanup...", expanded=True) as status:
