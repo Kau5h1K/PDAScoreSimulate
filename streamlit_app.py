@@ -7,12 +7,13 @@ import subprocess
 import time
 import random
 from PIL import Image
+from streamlit_echarts import st_echarts
 
 def format_floats(x):
     return f'{x:.1f}' if isinstance(x, (float, int)) else x
 
-def generate_sorted_random_integers():
-    random_integers = random.sample(range(101), 4)
+def generate_sorted_random_integers(n):
+    random_integers = random.sample(range(101), n)
     random_integers.sort()
     return random_integers
 
@@ -69,8 +70,6 @@ def get_unique_rules(df, column_name):
     return sorted(rules)
 
 
-
-
 # Sidebar inputs
 with st.sidebar:
 
@@ -102,7 +101,7 @@ with st.sidebar:
 
 variance_flag = 0
 improvement_flag = 0
-random_integers = generate_sorted_random_integers()
+random_integers = generate_sorted_random_integers(4)
 
 st.title("🎯 Provider Directory Score Guide")
 st.write("Utility tool to assess the impact of score changes when performing anomalous data cleanup in provider directory data.")
@@ -146,242 +145,424 @@ with tab1:
         - Type the updated amount to change the recommendation volume and hit "Enter".
         - Click on "Apply Changes" below the table to view the Demographic score impact.
         ''')
-
     st.text("")
-    markets = ['AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'FL', 'GA', 'IA', 'IN', 'KY', 'LA', 'MD', 'ME', 'MO', 'NH', 'NJ', 'NV', 'NY', 'NYWEST', 'OH', 'TN', 'TX', 'VA', 'WA', 'WI', 'WV']
-    market_selected = st.selectbox(label='Choose a market', options=markets, key='tab1mkt')
-
-    filtered_df = master_df[master_df['MARKET'] == market_selected]
-    tab1_df = filtered_df.drop(['RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN'], axis=1).drop_duplicates()
-    column1 = ['Market Selected', 'ProviderFinder Extract Timestamp', 'Demographic Score', 'Network Score', 'Overall Directory Score']
-    column2 = [market_selected, tab1_df['TIMESTAMP'].iloc[0], tab1_df['CURRENT_DEMOGRAPHIC_SCORE'].iloc[0], tab1_df['CURRENT_NETWORK_SCORE'].iloc[0], tab1_df['CURRENT_OVERALL_DIRECTORY_SCORE'].iloc[0]]
-
-    table_html = """
-    <div style="display: flex; justify-content: center;">
-    <table>
-        <tr>
-        <td><b>{}</b></td><td>{}</td>
-        </tr>
-        <tr>
-        <td><b>{}</b></td><td>{}</td>
-        </tr>
-        <tr>
-        <td><b>{}</b></td><td>{}</td>
-        </tr>
-        <tr>
-        <td><b>{}</b></td><td>{}</td>
-        </tr>
-        <tr>
-        <td><b>{}</b></td><td>{}</td>
-        </tr>
-    </table>
-    </div>
-    """.format(column1[0], column2[0], column1[1], column2[1], column1[2], column2[2], column1[3], column2[3], column1[4], column2[4])
-
-    # Display the table
-    st.markdown(table_html, unsafe_allow_html=True)
-    st.divider()
-
-    if tab1_df.empty:
-        st.error(f"No matching value found for {market_selected} in data")
-        st.stop()
-
-    data = {
-        'Number of Records': [tab1_df['NUM_RECORDS'].iloc[0]],
-        'Address - Auto Update (Final Suggestion)': [tab1_df['ADDRESS_FINAL_AUTO'].iloc[0]],
-        'Address - Manual Review (Final Suggestion)': [tab1_df['ADDRESS_FINAL_MANUAL'].iloc[0]],
-        'Address - Good (Final Suggestion)': [tab1_df['ADDRESS_FINAL_GOOD'].iloc[0]],
-        'Phone - Auto Update (Final Suggestion)': [tab1_df['PHONE_FINAL_AUTO'].iloc[0]],
-        'Phone - Manual Review (Final Suggestion)': [tab1_df['PHONE_FINAL_MANUAL'].iloc[0]],
-        'Phone - Good (Final Suggestion)': [tab1_df['PHONE_FINAL_GOOD'].iloc[0]],
-        'Specialty - Auto Update': [tab1_df['SPCLTY_AUTO'].iloc[0]],
-        'Specialty - Manual Review': [tab1_df['SPCLTY_MANUAL'].iloc[0]],
-        'Specialty - Good': [tab1_df['SPCLTY_GOOD'].iloc[0]]
-    }
-
-    result_df = pd.DataFrame(data).transpose()
-    result_df.reset_index(inplace=True)
-    result_df.columns = ['Statistic', 'Volume']
-    st.subheader("📊 Data Quality Recommendations Breakdown:")
+    t1_tab1, t1_tab2 = st.tabs(["🟦 Single Mode", "🟥 Batch Mode"])
     st.text("")
 
-    col1, col2, col3 = st.columns([1, 3, 0.25])  # Adjust the width ratio to your needs
-
-    with col2:
-        edited_df = st.data_editor(result_df, key='reco', hide_index=True, column_config={
-        "Statistic": st.column_config.TextColumn(disabled=True),
-        "Volume": st.column_config.NumberColumn(disabled=False)
-    })
-    st.session_state['reco_bd'] = result_df
-    st.info("ℹ️ Edit the above values and click **Apply** to produce the estimated scores after data cleanup")
-
-    df_original_result = None
-        
-    if st.button('Apply Changes'):
-        st.divider()
-        st.subheader("🧮 Estimated Demographic Scores After Cleanup:")
+    with t1_tab1:
         st.text("")
-        st.write("**Original Demographic Scores:**")
-        bar = st.progress(random_integers[0], text="Reconstructing original demographic scores. Please wait.")
-        time.sleep(1)
+        markets = ['AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 'FL', 'GA', 'IA', 'IN', 'KY', 'LA', 'MD', 'ME', 'MO', 'NH', 'NJ', 'NV', 'NY', 'NYWEST', 'OH', 'TN', 'TX', 'VA', 'WA', 'WI', 'WV']
+        market_selected = st.selectbox(label='Choose a market', options=markets, key='tab1mkt')
 
-        original_df = st.session_state['reco_bd']
-        num_records = int(original_df.loc[original_df['Statistic'] == 'Number of Records', 'Volume'].values[0])
-        address_auto = float(original_df.loc[original_df['Statistic'] == 'Address - Auto Update (Final Suggestion)', 'Volume'].values[0])
-        address_manual = float(original_df.loc[original_df['Statistic'] == 'Address - Manual Review (Final Suggestion)', 'Volume'].values[0])
-        address_good = float(original_df.loc[original_df['Statistic'] == 'Address - Good (Final Suggestion)', 'Volume'].values[0])
-        phone_auto = float(original_df.loc[original_df['Statistic'] == 'Phone - Auto Update (Final Suggestion)', 'Volume'].values[0])
-        phone_manual = float(original_df.loc[original_df['Statistic'] == 'Phone - Manual Review (Final Suggestion)', 'Volume'].values[0])
-        phone_good = float(original_df.loc[original_df['Statistic'] == 'Phone - Good (Final Suggestion)', 'Volume'].values[0])
-        specialty_auto = float(original_df.loc[original_df['Statistic'] == 'Specialty - Auto Update', 'Volume'].values[0])
-        specialty_manual = float(original_df.loc[original_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
-        specialty_good = float(original_df.loc[original_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
+        filtered_df = master_df[master_df['MARKET'] == market_selected]
+        tab1_df = filtered_df.drop(['RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN'], axis=1).drop_duplicates()
+        column1 = ['Market Selected', 'ProviderFinder Extract Timestamp', 'Demographic Score', 'Network Score', 'Overall Directory Score']
+        column2 = [market_selected, tab1_df['TIMESTAMP'].iloc[0], tab1_df['CURRENT_DEMOGRAPHIC_SCORE'].iloc[0], tab1_df['CURRENT_NETWORK_SCORE'].iloc[0], tab1_df['CURRENT_OVERALL_DIRECTORY_SCORE'].iloc[0]]
 
-        bar.progress(random_integers[1], text="Reconstructing original demographic scores. Please wait.")
-        time.sleep(1)
+        table_html = """
+        <div style="display: flex; justify-content: center;">
+        <table>
+            <tr>
+            <td><b>{}</b></td><td>{}</td>
+            </tr>
+            <tr>
+            <td><b>{}</b></td><td>{}</td>
+            </tr>
+            <tr>
+            <td><b>{}</b></td><td>{}</td>
+            </tr>
+            <tr>
+            <td><b>{}</b></td><td>{}</td>
+            </tr>
+            <tr>
+            <td><b>{}</b></td><td>{}</td>
+            </tr>
+        </table>
+        </div>
+        """.format(column1[0], column2[0], column1[1], column2[1], column1[2], column2[2], column1[3], column2[3], column1[4], column2[4])
 
-        average_scores_df = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
-        st.session_state['average_scores_df'] = average_scores_df
-
-        bar.progress(random_integers[2], text="Reconstructing original demographic scores. Please wait.")
-        time.sleep(1)
-
-        if 'average_scores_df' in st.session_state:
-            data = st.session_state['average_scores_df'].round(1).to_dict(orient='records')
-            bar.progress(random_integers[3], text="Reconstructing original demographic scores. Please wait.")
-            time.sleep(1)
-            bar.progress(100)
-            bar.empty()
-            df_formatted = st.session_state['average_scores_df'].map(format_floats)
-            df_original_result = df_formatted
-            col1, col2, col3 = st.columns([1, 5, 1])
-            with col2:
-                st.dataframe(df_formatted, hide_index=True)
-        
+        # Display the table
+        st.markdown(table_html, unsafe_allow_html=True)
         st.divider()
-        st.write("**Demographic Scores After Updates:**")
 
-        with st.status("Computing Scores After Data Cleanup...", expanded=True) as status:
-            st.write("Searching for data...")
-            time.sleep(2)
-            st.write("Reading the data...")
+        if tab1_df.empty:
+            st.error(f"No matching value found for {market_selected} in data")
+            st.stop()
+
+        data = {
+            'Number of Records': [tab1_df['NUM_RECORDS'].iloc[0]],
+            'Address - Auto Update (Final Suggestion)': [tab1_df['ADDRESS_FINAL_AUTO'].iloc[0]],
+            'Address - Manual Review (Final Suggestion)': [tab1_df['ADDRESS_FINAL_MANUAL'].iloc[0]],
+            'Address - Good (Final Suggestion)': [tab1_df['ADDRESS_FINAL_GOOD'].iloc[0]],
+            'Phone - Auto Update (Final Suggestion)': [tab1_df['PHONE_FINAL_AUTO'].iloc[0]],
+            'Phone - Manual Review (Final Suggestion)': [tab1_df['PHONE_FINAL_MANUAL'].iloc[0]],
+            'Phone - Good (Final Suggestion)': [tab1_df['PHONE_FINAL_GOOD'].iloc[0]],
+            'Specialty - Auto Update': [tab1_df['SPCLTY_AUTO'].iloc[0]],
+            'Specialty - Manual Review': [tab1_df['SPCLTY_MANUAL'].iloc[0]],
+            'Specialty - Good': [tab1_df['SPCLTY_GOOD'].iloc[0]]
+        }
+
+        result_df = pd.DataFrame(data).transpose()
+        result_df.reset_index(inplace=True)
+        result_df.columns = ['Statistic', 'Volume']
+        st.subheader("📊 Data Quality Recommendations Breakdown:")
+        st.text("")
+
+        col1, col2, col3 = st.columns([1, 3, 0.25])  # Adjust the width ratio to your needs
+
+        with col2:
+            edited_df = st.data_editor(result_df, key='reco', hide_index=True, column_config={
+            "Statistic": st.column_config.TextColumn(disabled=True),
+            "Volume": st.column_config.NumberColumn(disabled=False)
+        })
+        st.session_state['reco_bd'] = result_df
+        st.info("ℹ️ Edit the above values and click **Apply** to produce the estimated scores after data cleanup")
+
+        df_original_result = None
+            
+        if st.button('Apply Changes', key = 't1_1'):
+            st.divider()
+            st.subheader("🧮 Estimated Demographic Scores After Cleanup:")
+            st.text("")
+            st.write("**Original Demographic Scores:**")
+            bar = st.progress(random_integers[0], text="Reconstructing original demographic scores. Please wait.")
             time.sleep(1)
 
-            st.session_state['reco_bd'] = edited_df
-            edited_df = st.session_state['reco_bd']
-            num_records = int(edited_df.loc[edited_df['Statistic'] == 'Number of Records', 'Volume'].values[0])
-            address_auto = float(edited_df.loc[edited_df['Statistic'] == 'Address - Auto Update (Final Suggestion)', 'Volume'].values[0])
-            address_manual = float(edited_df.loc[edited_df['Statistic'] == 'Address - Manual Review (Final Suggestion)', 'Volume'].values[0])
-            address_good = float(edited_df.loc[edited_df['Statistic'] == 'Address - Good (Final Suggestion)', 'Volume'].values[0])
-            phone_auto = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Auto Update (Final Suggestion)', 'Volume'].values[0])
-            phone_manual = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Manual Review (Final Suggestion)', 'Volume'].values[0])
-            phone_good = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Good (Final Suggestion)', 'Volume'].values[0])
-            specialty_auto = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Auto Update', 'Volume'].values[0])
-            specialty_manual = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
-            specialty_good = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
+            original_df = st.session_state['reco_bd']
+            num_records = int(original_df.loc[original_df['Statistic'] == 'Number of Records', 'Volume'].values[0])
+            address_auto = float(original_df.loc[original_df['Statistic'] == 'Address - Auto Update (Final Suggestion)', 'Volume'].values[0])
+            address_manual = float(original_df.loc[original_df['Statistic'] == 'Address - Manual Review (Final Suggestion)', 'Volume'].values[0])
+            address_good = float(original_df.loc[original_df['Statistic'] == 'Address - Good (Final Suggestion)', 'Volume'].values[0])
+            phone_auto = float(original_df.loc[original_df['Statistic'] == 'Phone - Auto Update (Final Suggestion)', 'Volume'].values[0])
+            phone_manual = float(original_df.loc[original_df['Statistic'] == 'Phone - Manual Review (Final Suggestion)', 'Volume'].values[0])
+            phone_good = float(original_df.loc[original_df['Statistic'] == 'Phone - Good (Final Suggestion)', 'Volume'].values[0])
+            specialty_auto = float(original_df.loc[original_df['Statistic'] == 'Specialty - Auto Update', 'Volume'].values[0])
+            specialty_manual = float(original_df.loc[original_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
+            specialty_good = float(original_df.loc[original_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
 
-            st.write(f"Running {num_simulations} simulations...")
+            bar.progress(random_integers[1], text="Reconstructing original demographic scores. Please wait.")
             time.sleep(1)
+
             average_scores_df = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
             st.session_state['average_scores_df'] = average_scores_df
-            st.write(f"Estimating the scores...")
+
+            bar.progress(random_integers[2], text="Reconstructing original demographic scores. Please wait.")
             time.sleep(1)
 
             if 'average_scores_df' in st.session_state:
                 data = st.session_state['average_scores_df'].round(1).to_dict(orient='records')
+                bar.progress(random_integers[3], text="Reconstructing original demographic scores. Please wait.")
+                time.sleep(1)
+                bar.progress(100)
+                bar.empty()
                 df_formatted = st.session_state['average_scores_df'].map(format_floats)
+                df_original_result = df_formatted
+                col1, col2, col3 = st.columns([1, 5, 1])
+                with col2:
+                    st.dataframe(df_formatted, hide_index=True)
+            
+            st.divider()
+            st.write("**Demographic Scores After Updates:**")
 
-            status.update(
-                label="Process complete!", state="complete", expanded=False
-            )
-        
-        a1, a2 = float(df_original_result['Address Score'].iloc[0]), float(df_formatted['Address Score'].iloc[0])
-        p1, p2 = float(df_original_result['Phone Score'].iloc[0]), float(df_formatted['Phone Score'].iloc[0])
-        s1, s2 = float(df_original_result['Specialty Score'].iloc[0]), float(df_formatted['Specialty Score'].iloc[0])
-        d1, d2 = float(df_original_result['Overall Demographic Score'].iloc[0]), float(df_formatted['Overall Demographic Score'].iloc[0])
-        actual_d1 = tab1_df['CURRENT_DEMOGRAPHIC_SCORE'].iloc[0]
-        absolute_difference = round(abs(actual_d1 - d1), 1)
-        
-        if (absolute_difference > margin_error):
-            variance_flag = 1
+            with st.status("Computing Scores After Data Cleanup...", expanded=True) as status:
+                st.write("Searching for data...")
+                time.sleep(2)
+                st.write("Reading the data...")
+                time.sleep(1)
 
-        st.text("")
-        messages = []
-        a_delta = round(a2 - a1, 1)
-        p_delta = round(p2 - p1, 1)
-        s_delta = round(s2 - s1, 1)
-        d_delta = round(d2 - d1, 1)
+                st.session_state['reco_bd'] = edited_df
+                edited_df = st.session_state['reco_bd']
+                num_records = int(edited_df.loc[edited_df['Statistic'] == 'Number of Records', 'Volume'].values[0])
+                address_auto = float(edited_df.loc[edited_df['Statistic'] == 'Address - Auto Update (Final Suggestion)', 'Volume'].values[0])
+                address_manual = float(edited_df.loc[edited_df['Statistic'] == 'Address - Manual Review (Final Suggestion)', 'Volume'].values[0])
+                address_good = float(edited_df.loc[edited_df['Statistic'] == 'Address - Good (Final Suggestion)', 'Volume'].values[0])
+                phone_auto = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Auto Update (Final Suggestion)', 'Volume'].values[0])
+                phone_manual = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Manual Review (Final Suggestion)', 'Volume'].values[0])
+                phone_good = float(edited_df.loc[edited_df['Statistic'] == 'Phone - Good (Final Suggestion)', 'Volume'].values[0])
+                specialty_auto = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Auto Update', 'Volume'].values[0])
+                specialty_manual = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Manual Review', 'Volume'].values[0])
+                specialty_good = float(edited_df.loc[edited_df['Statistic'] == 'Specialty - Good', 'Volume'].values[0])
 
-        col1, col2, col3, col4 = st.columns(4)
-        if (a_delta == 0):
-            col1.metric("Address Score", a2, a_delta, delta_color="off")
-        else:
-            col1.metric("Address Score", a2, a_delta)
-        
-        if (p_delta == 0):
-            col2.metric("Phone Score", p2, p_delta, delta_color="off")
-        else:
-            col2.metric("Phone Score", p2, p_delta)
+                st.write(f"Running {num_simulations} simulations...")
+                time.sleep(1)
+                average_scores_df = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
+                st.session_state['average_scores_df'] = average_scores_df
+                st.write(f"Estimating the scores...")
+                time.sleep(1)
 
-        if (s_delta == 0):
-            col3.metric("Specialty Score", s2, s_delta, delta_color="off")
-        else:
-            col3.metric("Specialty Score", s2, s_delta)
+                if 'average_scores_df' in st.session_state:
+                    data = st.session_state['average_scores_df'].round(1).to_dict(orient='records')
+                    df_formatted = st.session_state['average_scores_df'].map(format_floats)
 
-        if (d_delta == 0):
-            col4.metric("Overall Demographic Score", d2, d_delta, delta_color="off")
-        else:
-            col4.metric("Overall Demographic Score", d2, d_delta)
+                status.update(
+                    label="Process complete!", state="complete", expanded=False
+                )
+            
+            a1, a2 = float(df_original_result['Address Score'].iloc[0]), float(df_formatted['Address Score'].iloc[0])
+            p1, p2 = float(df_original_result['Phone Score'].iloc[0]), float(df_formatted['Phone Score'].iloc[0])
+            s1, s2 = float(df_original_result['Specialty Score'].iloc[0]), float(df_formatted['Specialty Score'].iloc[0])
+            d1, d2 = float(df_original_result['Overall Demographic Score'].iloc[0]), float(df_formatted['Overall Demographic Score'].iloc[0])
+            actual_d1 = tab1_df['CURRENT_DEMOGRAPHIC_SCORE'].iloc[0]
+            absolute_difference = round(abs(actual_d1 - d1), 1)
+            
+            if (absolute_difference > margin_error):
+                variance_flag = 1
 
-        if a2 - a1 < 0:
-            messages.append(f"- Address Score **decreased by {a1 - a2:.1f}**")
-        elif a2 - a1 > 0:
-            messages.append(f"- Address Score **increased by {a2 - a1:.1f}**")
-        else:
-            messages.append(f"- Address Score **remain unchanged**")
+            st.text("")
+            messages = []
+            a_delta = round(a2 - a1, 1)
+            p_delta = round(p2 - p1, 1)
+            s_delta = round(s2 - s1, 1)
+            d_delta = round(d2 - d1, 1)
 
-        if p2 - p1 < 0:
-            messages.append(f"- Phone Score **decreased by {p1 - p2:.1f}**")
-        elif p2 - p1 > 0:
-            messages.append(f"- Phone Score **increased by {p2 - p1:.1f}**")
-        else:
-            messages.append(f"- Phone Score **remain unchanged**")
-
-        if s2 - s1 < 0:
-            messages.append(f"- Specialty Score **decreased by {s1 - s2:.1f}**")
-        elif s2 - s1 > 0:
-            messages.append(f"- Specialty Score **increased by {s2 - s1:.1f}**")
-        else:
-            messages.append(f"- Specialty Score **remain unchanged**")
-
-        if d2 - d1 < 0:
-            messages.append(f"- Overall Demographic Score **decreased by {d1 - d2:.1f}**")
-            improvement_flag = 1
-        elif d2 - d1 > 0:
-            messages.append(f"- Overall Demographic Score **increased by {d2 - d1:.1f}**")
-        else:
-            messages.append(f"- Overall Demographic Score **remain unchanged**")
-
-        final_message = "\n".join(messages)
-
-        st.text("")
-        with st.expander(":mag: Understanding the Results", expanded = True):
-            if (improvement_flag == 1):
-                st.error(final_message)
+            col1, col2, col3, col4 = st.columns(4)
+            if (a_delta == 0):
+                col1.metric("Address Score", a2, a_delta, delta_color="off")
             else:
-                st.success(final_message)
+                col1.metric("Address Score", a2, a_delta)
+            
+            if (p_delta == 0):
+                col2.metric("Phone Score", p2, p_delta, delta_color="off")
+            else:
+                col2.metric("Phone Score", p2, p_delta)
 
-        if (variance_flag == 1):
-            with st.expander('⚠️ WARNING'):
-                st.warning(f'''The **simulated Demographic Score** (**{d1}**) differs significantly from the **actual Demographic Score** (**{actual_d1}**) on Elixir-P UI. 
-              The maximum allowable margin of error is set to **{margin_error}**. 
-              Please adjust the attribute-wise scores above to better align with the Elixir-P UI for more accurate predictions.''')
-            st.toast('''Process completed with a warning alert!''')
+            if (s_delta == 0):
+                col3.metric("Specialty Score", s2, s_delta, delta_color="off")
+            else:
+                col3.metric("Specialty Score", s2, s_delta)
+
+            if (d_delta == 0):
+                col4.metric("Overall Demographic Score", d2, d_delta, delta_color="off")
+            else:
+                col4.metric("Overall Demographic Score", d2, d_delta)
+
+            if a2 - a1 < 0:
+                messages.append(f"- Address Score **decreased by {a1 - a2:.1f}**")
+            elif a2 - a1 > 0:
+                messages.append(f"- Address Score **increased by {a2 - a1:.1f}**")
+            else:
+                messages.append(f"- Address Score **remain unchanged**")
+
+            if p2 - p1 < 0:
+                messages.append(f"- Phone Score **decreased by {p1 - p2:.1f}**")
+            elif p2 - p1 > 0:
+                messages.append(f"- Phone Score **increased by {p2 - p1:.1f}**")
+            else:
+                messages.append(f"- Phone Score **remain unchanged**")
+
+            if s2 - s1 < 0:
+                messages.append(f"- Specialty Score **decreased by {s1 - s2:.1f}**")
+            elif s2 - s1 > 0:
+                messages.append(f"- Specialty Score **increased by {s2 - s1:.1f}**")
+            else:
+                messages.append(f"- Specialty Score **remain unchanged**")
+
+            if d2 - d1 < 0:
+                messages.append(f"- Overall Demographic Score **decreased by {d1 - d2:.1f}**")
+                improvement_flag = 1
+            elif d2 - d1 > 0:
+                messages.append(f"- Overall Demographic Score **increased by {d2 - d1:.1f}**")
+            else:
+                messages.append(f"- Overall Demographic Score **remain unchanged**")
+
+            final_message = "\n".join(messages)
+
+            st.text("")
+            with st.expander(":mag: Understanding the Results", expanded = True):
+                if (improvement_flag == 1):
+                    st.error(final_message)
+                else:
+                    st.success(final_message)
+
+            if (variance_flag == 1):
+                with st.expander('⚠️ WARNING'):
+                    st.warning(f'''The **simulated Demographic Score** (**{d1}**) differs significantly from the **actual Demographic Score** (**{actual_d1}**) on Elixir-P UI. 
+                The maximum allowable margin of error is set to **{margin_error}**. 
+                Please adjust the attribute-wise scores above to better align with the Elixir-P UI for more accurate predictions.''')
+                st.toast('''Process completed with a warning alert!''')
+            else:
+                st.toast('''Process completed successfully!''')
+
+    with t1_tab2:
+        st.write("")
+        st.write("PDA Score Summary:")
+        #st.write("")
+        filtered_df = master_df.sort_values(by='MARKET', ascending=True).reset_index(drop=True)
+        tab1_1_df = filtered_df.drop(['RULE_COMBO_LENGTH', 'RULE_TO_DISABLE', 'NUM_RECORDS_AUTOMATION_GAIN'], axis=1).drop_duplicates()
+        
+        smry_mkt_df = tab1_1_df.loc[:, ["MARKET", "TIMESTAMP", "CURRENT_DEMOGRAPHIC_SCORE", "CURRENT_NETWORK_SCORE", "CURRENT_OVERALL_DIRECTORY_SCORE"]].drop_duplicates()
+        smry_mkt_df = smry_mkt_df.rename(columns={"MARKET": "Market", "TIMESTAMP": "Timestamp", "CURRENT_DEMOGRAPHIC_SCORE": "Demographic Score", "CURRENT_NETWORK_SCORE": "Network Score", "CURRENT_OVERALL_DIRECTORY_SCORE": "Overall Directory Score"})
+        smry_mkt_df["Timestamp"] = smry_mkt_df["Timestamp"].astype(str)
+        
+        st.dataframe(smry_mkt_df, hide_index=True, use_container_width=True)
+
+        st.divider()
+
+        data = {
+            'Number of Records': [tab1_df['NUM_RECORDS'].iloc[0]],
+            'Address - Auto Update (Final Suggestion)': [tab1_df['ADDRESS_FINAL_AUTO'].iloc[0]],
+            'Address - Manual Review (Final Suggestion)': [tab1_df['ADDRESS_FINAL_MANUAL'].iloc[0]],
+            'Address - Good (Final Suggestion)': [tab1_df['ADDRESS_FINAL_GOOD'].iloc[0]],
+            'Phone - Auto Update (Final Suggestion)': [tab1_df['PHONE_FINAL_AUTO'].iloc[0]],
+            'Phone - Manual Review (Final Suggestion)': [tab1_df['PHONE_FINAL_MANUAL'].iloc[0]],
+            'Phone - Good (Final Suggestion)': [tab1_df['PHONE_FINAL_GOOD'].iloc[0]],
+            'Specialty - Auto Update': [tab1_df['SPCLTY_AUTO'].iloc[0]],
+            'Specialty - Manual Review': [tab1_df['SPCLTY_MANUAL'].iloc[0]],
+            'Specialty - Good': [tab1_df['SPCLTY_GOOD'].iloc[0]]
+        }
+
+        result2_df = tab1_1_df[["MARKET", "NUM_RECORDS", "ADDRESS_FINAL_AUTO", "ADDRESS_FINAL_MANUAL", "ADDRESS_FINAL_GOOD", "PHONE_FINAL_AUTO", "PHONE_FINAL_MANUAL", "PHONE_FINAL_GOOD", "SPCLTY_AUTO", "SPCLTY_MANUAL", "SPCLTY_GOOD"]].drop_duplicates()
+        result2_df.reset_index(inplace=True, drop=True)
+        result2_df.columns = ["Market", "Number of Records", "Address - Auto Update (Final Suggestion)","Address - Manual Review (Final Suggestion)","Address - Good (Final Suggestion)","Phone - Auto Update (Final Suggestion)","Phone - Manual Review (Final Suggestion)","Phone - Good (Final Suggestion)","Specialty - Auto Update","Specialty - Manual Review","Specialty - Good"]
+        
+        st.subheader("📊 Data Quality Recommendations Breakdown:")
+        st.text("")
+
+        edited2_df = st.data_editor(result2_df, key='reco1_2', hide_index=True, column_config={
+        "Market": st.column_config.TextColumn(disabled=True),
+        "Number of Records": st.column_config.NumberColumn(disabled=True),
+        "Address - Auto Update (Final Suggestion)": st.column_config.NumberColumn(disabled=False),
+        "Address - Manual Review (Final Suggestion)": st.column_config.NumberColumn(disabled=False),
+        "Address - Good (Final Suggestion)": st.column_config.NumberColumn(disabled=False),
+        "Phone - Auto Update (Final Suggestion)": st.column_config.NumberColumn(disabled=False),
+        "Phone - Manual Review (Final Suggestion)": st.column_config.NumberColumn(disabled=False),
+        "Phone - Good (Final Suggestion)": st.column_config.NumberColumn(disabled=False),
+        "Specialty - Auto Update": st.column_config.NumberColumn(disabled=False),
+        "Specialty - Manual Review": st.column_config.NumberColumn(disabled=False),
+        "Specialty - Good": st.column_config.NumberColumn(disabled=False)
+        })
+
+        st.session_state['reco1_2_bd'] = result2_df
+        st.info("ℹ️ Edit the above values and click **Apply** to produce the estimated scores after data cleanup")
+
+        with st.expander(":bulb: See Original Values"):
+            st.dataframe(result2_df, hide_index=True, use_container_width=True)
+
+        df_original_result2 = None
+        st.text("")
+        
+        if st.button('Apply Changes', key = 't1_2'):
+            st.divider()
+            st.subheader("🧮 Estimated Demographic Scores After Cleanup:")
+            st.text("")
+
+            original_df = st.session_state['reco1_2_bd']
+            mkt_list = sorted(original_df['Market'].unique())
+            all_mkt_df = pd.DataFrame()
+
+            with st.status("Computing Scores After Data Cleanup...", expanded=True) as status:
+                st.write("Searching for data...")
+                time.sleep(2)
+                st.write("Reading the data...")
+                time.sleep(1)
+                st.write(f"Processing the data...")
+                time.sleep(1)
+                st.write(f"Running {num_simulations} simulations to reconstruct original scores...")
+                time.sleep(1)
+                st.write(f"Estimating the scores after data cleanup...")
+                time.sleep(1)
+                for mkt in mkt_list:
+                    st.write(f"Processing Market: {mkt}")
+                    time.sleep(1)            
+                    original_df_mkt = original_df[original_df["Market"] == mkt]
+                    num_records = int(original_df_mkt.loc[:, 'Number of Records'].values[0])
+                    address_auto = float(original_df_mkt.loc[:, 'Address - Auto Update (Final Suggestion)'].values[0])
+                    address_manual = float(original_df_mkt.loc[:, 'Address - Manual Review (Final Suggestion)'].values[0])
+                    address_good = float(original_df_mkt.loc[:, 'Address - Good (Final Suggestion)'].values[0])
+                    phone_auto = float(original_df_mkt.loc[:, 'Phone - Auto Update (Final Suggestion)'].values[0])
+                    phone_manual = float(original_df_mkt.loc[:, 'Phone - Manual Review (Final Suggestion)'].values[0])
+                    phone_good = float(original_df_mkt.loc[:, 'Phone - Good (Final Suggestion)'].values[0])
+                    specialty_auto = float(original_df_mkt.loc[:, 'Specialty - Auto Update'].values[0])
+                    specialty_manual = float(original_df_mkt.loc[:, 'Specialty - Manual Review'].values[0])
+                    specialty_good = float(original_df_mkt.loc[:, 'Specialty - Good'].values[0])
+                    
+                    average_scores_df2 = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
+                    df_original_result2 = average_scores_df2.map(format_floats)
+
+                    edited2_df_mkt = edited2_df[edited2_df["Market"] == mkt]
+                    num_records = int(edited2_df_mkt.loc[:, 'Number of Records'].values[0])
+                    address_auto = float(edited2_df_mkt.loc[:, 'Address - Auto Update (Final Suggestion)'].values[0])
+                    address_manual = float(edited2_df_mkt.loc[:, 'Address - Manual Review (Final Suggestion)'].values[0])
+                    address_good = float(edited2_df_mkt.loc[:, 'Address - Good (Final Suggestion)'].values[0])
+                    phone_auto = float(edited2_df_mkt.loc[:, 'Phone - Auto Update (Final Suggestion)'].values[0])
+                    phone_manual = float(edited2_df_mkt.loc[:, 'Phone - Manual Review (Final Suggestion)'].values[0])
+                    phone_good = float(edited2_df_mkt.loc[:, 'Phone - Good (Final Suggestion)'].values[0])
+                    specialty_auto = float(edited2_df_mkt.loc[:, 'Specialty - Auto Update'].values[0])
+                    specialty_manual = float(edited2_df_mkt.loc[:, 'Specialty - Manual Review'].values[0])
+                    specialty_good = float(edited2_df_mkt.loc[:, 'Specialty - Good'].values[0])
+
+                    average_scores_df2_fmt = run_score_experiment(seed, num_simulations, num_records, address_auto, address_manual, address_good, phone_auto, phone_manual, phone_good, specialty_auto, specialty_manual, specialty_good)
+                    df_formatted = average_scores_df2_fmt.map(format_floats)
+
+                    a1, a2 = float(df_original_result2['Address Score'].iloc[0]), float(df_formatted['Address Score'].iloc[0])
+                    p1, p2 = float(df_original_result2['Phone Score'].iloc[0]), float(df_formatted['Phone Score'].iloc[0])
+                    s1, s2 = float(df_original_result2['Specialty Score'].iloc[0]), float(df_formatted['Specialty Score'].iloc[0])
+                    d1, d2 = float(df_original_result2['Overall Demographic Score'].iloc[0]), float(df_formatted['Overall Demographic Score'].iloc[0])
+
+                    mkt_df = pd.DataFrame({
+                        'Market': [mkt],
+                        'Reconstructed Address Score': [a1],
+                        'Reconstructed Phone Score': [p1],
+                        'Reconstructed Specialty Score': [s1],
+                        'Reconstructed Overall Demographic Score': [d1],
+                        'Predicted Address Score': [a2],
+                        'Predicted Phone Score': [p2],
+                        'Predicted Specialty Score': [s2],
+                        'Predicted Overall Demographic Score': [d2]
+                    })
+
+                    all_mkt_df = pd.concat([all_mkt_df, mkt_df], ignore_index = True)
+
+                edited2_df_tmp = edited2_df.drop(["Number of Records"], axis = 1)
+                edited2_df_tmp = edited2_df_tmp.add_suffix(" (EDITED)")
+                edited2_df_tmp = edited2_df_tmp.rename({'Market (EDITED)': 'Market'}, axis = 1)
+                merged_df1 = pd.merge(smry_mkt_df, result2_df, on = 'Market', how = 'inner')
+                merged_df2 = pd.merge(merged_df1, edited2_df_tmp, on = 'Market', how = 'inner')
+                merged_df3 = pd.merge(merged_df2, all_mkt_df, on = 'Market', how = 'inner')
+
+                st.write("Collating and Saving the Result...")
+                time.sleep(1)
+                
+                merged_df3.to_csv(f'./data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp}.csv', index=False)
+                time.sleep(1)
+                status.update(
+                    label="Process complete!", state="complete", expanded=False
+                )
+                st.toast('''Process completed successfully! Result is available for download.''')
+
+        st.divider()
+
+        st.subheader("📥 Download Result:")
+        st.text("")
+        folder_path = "data/batch_mode_output"
+        filename_pattern = re.compile(r"PDAScorerResult_BatchMode_(\d{8}).csv")
+        files = os.listdir(folder_path)
+
+        for file in files:
+            match = filename_pattern.match(file)
+            if match:
+                timestamp_op = match.group(1)
+                break
         else:
-            st.toast('''Process completed successfully!''')
+            st.error("No matching file found.")
+            timestamp_op = "99999999"
+            st.stop()
         
-        
+        st.info(f"Last Refreshed: {timestamp_op}")
+        csv_file = f"data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp_op}.csv"
+        with open(csv_file, "rb") as f:
+            csv_bytes = f.read()
 
+        st.download_button(
+            label="Download Full Report",
+            data=csv_bytes,
+            file_name=f"PDAScorerResult_BatchMode_{timestamp_op}.csv",
+            mime="application/csv"
+        )
+
+        st.divider()
+        
+        
 
 with tab2:
     st.write("> This section provides insight into the impact of safety rules (manual filters) in the PDA Address report (Rule 29) that hinder cleanup.")
