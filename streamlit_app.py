@@ -13,42 +13,10 @@ from git import Repo
 def format_floats(x):
     return f'{x:.1f}' if isinstance(x, (float, int)) else x
 
-def git_operations(csv_file_path):
-    try:
-        # Initialize repo object
-        repo = Repo(os.getcwd())
-
-        # Perform git pull --rebase
-        origin = repo.remote(name='origin')
-        pull_info = origin.pull(rebase=True)
-
-        if not pull_info:
-            st.error("Could not pull from the remote repository. Check your SSH or HTTPS configuration.")
-
-        # Add the CSV file
-        repo.git.add(csv_file_path)
-
-        # Commit changes
-        repo.index.commit("Automated commit: CSV file saved")
-
-        # Push to the repository
-        origin.push()
-        st.success("Changes pushed to the repository successfully!")
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-
 def generate_sorted_random_integers(n):
     random_integers = random.sample(range(101), n)
     random_integers.sort()
     return random_integers
-
-def git_pull(subfolder):
-    try:
-        result = subprocess.run(["git", "pull", "origin", "main"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=subfolder)
-        print("Output:", result.stdout)
-        print("Error:", result.stderr)
-    except subprocess.CalledProcessError as e:
-        print("Error during git pull:", e)
 
 def run_score_simulation(seed, n, pa, pp, ps):
     np.random.seed(seed)
@@ -550,8 +518,6 @@ with tab1:
                 time.sleep(1)
                 csv_file_path = f"./data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp}.csv"
                 merged_df3.to_csv(csv_file_path, index=False)
-                git_operations(csv_file_path)
-                time.sleep(1)
                 status.update(
                     label="Process complete!", state="complete", expanded=False
                 )
