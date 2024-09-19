@@ -7,7 +7,6 @@ import subprocess
 import time
 import random
 from PIL import Image
-from streamlit_echarts import st_echarts
 
 def format_floats(x):
     return f'{x:.1f}' if isinstance(x, (float, int)) else x
