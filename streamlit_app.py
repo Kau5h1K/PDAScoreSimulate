@@ -114,7 +114,9 @@ else:
 
 with st.sidebar:
     st.divider()
-    st.caption(f"⌚ Last Refresh Timestamp: **{timestamp}**")
+    date_obj = datetime.strptime(timestamp, "%Y%m%d")
+    readable_date = date_obj.strftime("%B %d, %Y")
+    st.caption(f"⌚ Last Refresh Timestamp: **{readable_date}**")
     st.caption("💻 Developed by **HiLabs**")
 
 
@@ -523,44 +525,45 @@ with tab1:
                     label="Process complete!", state="complete", expanded=False
                 )
             st.download_button(
-                label="Download Full Report",
+                label="📥 Download Full Report",
                 data=csv_data,
                 file_name=f"PDAScorerResult_BatchMode_{timestamp}.csv",
                 mime="text/csv"
             )
             st.toast('''Process completed successfully! Result is available for download.''')
 
-        st.divider()
+        # st.divider()
 
-        st.subheader("📥 Previously Saved Result:")
-        st.text("")
-        folder_path = "data/batch_mode_output"
-        filename_pattern = re.compile(r"PDAScorerResult_BatchMode_(\d{8}).csv")
-        files = os.listdir(folder_path)
+        # st.subheader("📥 Previously Saved Result:")
+        # st.text("")
+        # folder_path = "data/batch_mode_output"
+        # filename_pattern = re.compile(r"PDAScorerResult_BatchMode_(\d{8}).csv")
+        # files = os.listdir(folder_path)
 
-        for file in files:
-            match = filename_pattern.match(file)
-            if match:
-                timestamp_op = match.group(1)
-                break
-        else:
-            st.error("No saved files found.")
-            timestamp_op = "99999999"
-            st.stop()
+        # for file in files:
+        #     match = filename_pattern.match(file)
+        #     if match:
+        #         timestamp_op = match.group(1)
+        #         break
+        # else:
+        #     st.error("No saved files found.")
+        #     timestamp_op = "99999999"
+        #     st.stop()
         
-        date_obj = datetime.strptime(timestamp_op, "%Y%m%d")
-        readable_date = date_obj.strftime("%B %d, %Y")
-        st.info(f"Last Refreshed: {readable_date}")
-        csv_file = f"data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp_op}.csv"
-        with open(csv_file, "rb") as f:
-            csv_bytes = f.read()
+        # date_obj = datetime.strptime(timestamp_op, "%Y%m%d")
+        # readable_date = date_obj.strftime("%B %d, %Y")
+        # st.info(f"Last Refreshed: {readable_date}")
+        # csv_file = f"data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp_op}.csv"
+        # with open(csv_file, "rb") as f:
+        #     csv_bytes = f.read()
 
-        st.download_button(
-            label="Download Full Report",
-            data=csv_bytes,
-            file_name=f"PDAScorerResult_BatchMode_{timestamp_op}.csv",
-            mime="text/csv"
-        )
+        # st.download_button(
+        #     label="Download Full Report",
+        #     data=csv_bytes,
+        #     file_name=f"PDAScorerResult_BatchMode_{timestamp_op}.csv",
+        #     mime="text/csv",
+        #     key="tab1_2_2"
+        # )
         
 
 with tab2:
