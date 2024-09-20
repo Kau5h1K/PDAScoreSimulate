@@ -8,7 +8,7 @@ import time
 import random
 from PIL import Image
 from datetime import datetime
-from git import Repo
+
 
 def format_floats(x):
     return f'{x:.1f}' if isinstance(x, (float, int)) else x
@@ -433,6 +433,7 @@ with tab1:
 
         df_original_result2 = None
         st.text("")
+        csv_file_path = None
         
         if st.button('Apply Changes', key = 't1_2'):
             st.divider()
@@ -440,8 +441,7 @@ with tab1:
             st.text("")
 
             original_df = st.session_state['reco1_2_bd']
-            # mkt_list = sorted(original_df['Market'].unique())
-            mkt_list = ["AZ", "AR"]
+            mkt_list = sorted(original_df['Market'].unique())
             all_mkt_df = pd.DataFrame()
 
             with st.status("Computing Scores After Data Cleanup...", expanded=True) as status:
@@ -516,16 +516,23 @@ with tab1:
 
                 st.write("Collating and Saving the Result...")
                 time.sleep(1)
-                csv_file_path = f"./data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp}.csv"
-                merged_df3.to_csv(csv_file_path, index=False)
+                #csv_file_path = f"./data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp}.csv"
+                #merged_df3.to_csv(csv_file_path, index=False)
+                csv_data = merged_df3.to_csv(index=False).encode('utf-8')
                 status.update(
                     label="Process complete!", state="complete", expanded=False
                 )
-                st.toast('''Process completed successfully! Result is available for download.''')
+            st.download_button(
+                label="Download Full Report",
+                data=csv_data,
+                file_name=f"PDAScorerResult_BatchMode_{timestamp}.csv",
+                mime="text/csv"
+            )
+            st.toast('''Process completed successfully! Result is available for download.''')
 
         st.divider()
 
-        st.subheader("📥 Download Result:")
+        st.subheader("📥 Previously Saved Result:")
         st.text("")
         folder_path = "data/batch_mode_output"
         filename_pattern = re.compile(r"PDAScorerResult_BatchMode_(\d{8}).csv")
@@ -537,11 +544,13 @@ with tab1:
                 timestamp_op = match.group(1)
                 break
         else:
-            st.error("No matching file found.")
+            st.error("No saved files found.")
             timestamp_op = "99999999"
             st.stop()
         
-        st.info(f"Last Refreshed: {timestamp_op}")
+        date_obj = datetime.strptime(timestamp_op, "%Y%m%d")
+        readable_date = date_obj.strftime("%B %d, %Y")
+        st.info(f"Last Refreshed: {readable_date}")
         csv_file = f"data/batch_mode_output/PDAScorerResult_BatchMode_{timestamp_op}.csv"
         with open(csv_file, "rb") as f:
             csv_bytes = f.read()
@@ -550,11 +559,8 @@ with tab1:
             label="Download Full Report",
             data=csv_bytes,
             file_name=f"PDAScorerResult_BatchMode_{timestamp_op}.csv",
-            mime="application/csv"
+            mime="text/csv"
         )
-
-        st.divider()
-        
         
 
 with tab2:
