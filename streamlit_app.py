@@ -63,10 +63,38 @@ def get_unique_rules(df, column_name):
     return sorted(rules)
 
 
+# Directory where the files are stored
+folder_path = './data/archive'
+
+# Extract timestamps from filenames and store them in a list
+file_timestamps = []
+file_paths = []
+
+for filename in os.listdir(folder_path):
+    if filename.startswith('ELIXIR_adhoc_PDAScorerSummary_') and filename.endswith('.csv'):
+        timestamp_str = filename.split('_')[-1].replace('.csv', '')
+        file_timestamps.append(timestamp_str)
+        file_paths.append(os.path.join(folder_path, filename))
+
+
+file_timestamps_dt = [datetime.strptime(ts, '%Y%m%d') for ts in file_timestamps]
+sorted_timestamps_dt = sorted(file_timestamps_dt, reverse=True)
+sorted_timestamps_str = [ts.strftime('%Y%m%d') for ts in sorted_timestamps_dt]
+readable_timestamps = [ts.strftime("%B %d, %Y") for ts in sorted_timestamps_dt]
+default_timestamp = sorted_timestamps_str[0]
+
 # Sidebar inputs
 with st.sidebar:
 
     st.subheader("⚙️ Change Configuration")
+    st.divider()
+    selected_readable_timestamp = st.selectbox("Select Refresh Timestamp:", readable_timestamps, index=0)
+    selected_timestamp = sorted_timestamps_str[readable_timestamps.index(selected_readable_timestamp)]
+    selected_file = os.path.join(folder_path, f'ELIXIR_adhoc_PDAScorerSummary_{selected_timestamp}.csv')
+    with st.expander(":bulb: Info"):
+        st.info('''
+        Selecting previous timestamps allows users to access and view historical data.
+        ''')
     st.divider()
     seed = st.number_input("Set a seed to reproduce random outcomes:", value=1, step=1, format="%d")
     with st.expander(":bulb: Info"):
@@ -99,28 +127,17 @@ random_integers = generate_sorted_random_integers(4)
 st.title("🎯 Provider Directory Score Guide")
 st.write("Utility tool to assess the impact of score changes when performing anomalous data cleanup in provider directory data.")
 
-folder_path = "data"
-filename_pattern = re.compile(r"ELIXIR_adhoc_PDAScorerSummary_(\d{8}).csv")
-files = os.listdir(folder_path)
-
-for file in files:
-    match = filename_pattern.match(file)
-    if match:
-        timestamp = match.group(1)
-        break
-else:
-    st.error("No matching file found.")
-    st.stop()
+timestamp = selected_timestamp
 
 with st.sidebar:
     st.divider()
     date_obj = datetime.strptime(timestamp, "%Y%m%d")
     readable_date = date_obj.strftime("%B %d, %Y")
-    st.caption(f"⌚ Last Refresh Timestamp: **{readable_date}**")
+    st.caption(f"⌚ Refresh Timestamp: **{readable_date}**")
     st.caption("💻 Developed by **HiLabs**")
 
 
-master_df = pd.read_csv(f"./data/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
+master_df = pd.read_csv(f"./data/archive/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
 
 tab1, tab2, tab3, tab4 = st.tabs([":star: Score Prediction", "📉 Manual Filter Impact", "🌐 Directory 360°", "❓ Scoring Methodology"])
 
