@@ -138,6 +138,7 @@ with st.sidebar:
 
 
 master_df = pd.read_csv(f"./data/archive/ELIXIR_adhoc_PDAScorerSummary_{timestamp}.csv")
+master_df[master_df.select_dtypes(include=['number']).columns] = master_df.select_dtypes(include=['number']).abs()
 
 tab1, tab2, tab3, tab4 = st.tabs([":star: Score Prediction", "📉 Manual Filter Impact", "🌐 Directory 360°", "❓ Scoring Methodology"])
 
